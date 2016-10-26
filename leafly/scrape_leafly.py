@@ -3,6 +3,8 @@ from bs4 import BeautifulSoup as bs
 from selenium import webdriver
 import time
 import cPickle as pk
+from datetime import datetime
+import threading
 
 def scrape_strainlist(save_file):
     driver.get(strain_url)
@@ -55,6 +57,71 @@ def get_strains(strain_soup, update_pk=False, strain_pages_file='strain_pages_li
         pk.dump(strains, open(strain_pages_file, 'w'), 2)
 
     return strains
+
+def scrape_reviews_page_threads(driver, coll, url, genetics, verbose=True):
+    '''
+    scrapes reviews page for all reviews
+    url is a string for the specified strain homepage
+
+    returns list of reviews
+    each review consist of a tuple of (user, stars, review_text, datetime_of_review)
+    '''
+    # num photos is index 1
+    driver.get(url)
+    soup = bs(driver.page_source, 'lxml')
+    num_reviews = int(soup.findAll('span', {'class': 'hidden-xs'})[0].get_text().strip('(').strip(')'))
+    print num_reviews, 'total reviews to scrape'
+    pages = num_reviews / 8
+    scrapetime = datetime.utcnow().isoformat()
+    threads = []
+    if coll.find({'genetics': genetics}).count() < 1:
+        coll.insert_one({'genetics': genetics})
+    if coll.find({'name': 'scrape_times'}).count() < 1:
+        coll.insert_one({'scrape_times': [scrapetime]})
+        coll.insert_one({'review_count': [num_reviews]})
+    else:
+        coll.update_one({'scrape_times': {'$exists': true}}, {'$push': {'scrape_times': scrapetime}})
+        coll.update_one({'review_count': {'$exists': true}}, {'$push': {'review_count': num_reviews}})
+        if coll.find({'review_count':{'$exists':'true'}}).next()['review_count'][-1] == num_reviews:
+            print 'already up-to-date'
+            return
+    for i in range(pages + 1):
+        cur_url = url + '/reviews?page=' + str(i)
+        if verbose:
+            print 'scraping', cur_url
+        #scrape_a_review_page(cur_url)
+        t = threading.Thread(target=scrape_a_review_page, args=(coll, cur_url))
+        t.start()
+        threads.append(t)
+    for th in threads:
+        th.join()
+
+def scrape_a_review_page(coll, url, verbose=True):
+    '''
+    scrapes review page and puts all the info in a mongodb, because it is unordered
+    '''
+    res = requests.get(url)
+    rev_soup = bs(res.content, 'lxml')
+    reviews_soup = rev_soup.findAll('li', {'class': 'page-item divider bottom padding-listItem'})
+    if verbose:
+        print len(reviews_soup), 'reviews on page'
+    for r in reviews_soup:
+        user = r.findAll('a', {'class': 'no-color'})[0].get_text()
+        stars = r.findAll('span', {'class': 'squeeze'})[0].get('star-rating')
+        text = r.findAll('p', {'class': 'copy--xs copy-md--md'})[0].get_text()[1:-1]
+        review_link = r.findAll('a', {'class': 'copy--xs copy-md--md'})[0].get('href')
+        date = r.findAll('time', \
+                         {'class': \
+                          'copy--xs copy-md--sm timestamp pull-right hidden-xs hidden-sm'}) \
+                            [0].get('datetime')
+
+        datadict = {}
+        datadict['user'] = user
+        datadict['stars'] = stars
+        datadict['text'] = text
+        datadict['link'] = review_link
+        datadict['date'] = date
+        coll.insert_one(datadict)
 
 if __name__ == "__main__":
     # base_url = 'https://weedmaps.com/'
