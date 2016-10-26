@@ -33,6 +33,29 @@ def scrape_strainlist(save_file):
     print len(soup.findAll('a', {'class': 'ng-scope'}))
     return soup
 
+def check_if_strains_uptodate(strains, strain_url, driver):
+    '''
+    scrapes leafly main page to check if any new strains have been added
+    '''
+    strain_len = len(strains)
+    print 'currently have', strain_len, 'strains'
+    driver.get(strain_url)
+    alpha_sort_soup = bs(driver.page_source, 'lxml')
+    cur_strains = int(alpha_sort_soup.findAll('strong', {'class':'ng-binding'})[0].get_text())
+    print 'found', cur_strains, 'strains on leafly'
+    if cur_strains > strain_len:
+        return False
+    return True
+
+def get_strains(strain_soup, update_pk=False, strain_pages_file='strain_pages_list.pk'):
+    # get list of strain pages
+    strains = strain_soup.findAll('a', {'class': 'ga_Explore_Strain_Tile'}) + strain_soup.findAll('a', {'class': 'ng-scope'})
+    strains = [s.get('href') for s in strains]
+    if not os.path.exists(strain_pages_file) or update:
+        pk.dump(strains, open(strain_pages_file, 'w'), 2)
+
+    return strains
+
 if __name__ == "__main__":
     # base_url = 'https://weedmaps.com/'
     # url = base_url + 'dispensaries/in/united-states/colorado/denver-downtown'
