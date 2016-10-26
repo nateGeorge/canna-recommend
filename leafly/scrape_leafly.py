@@ -5,6 +5,7 @@ import time
 import cPickle as pk
 from datetime import datetime
 import threading
+import os
 
 def scrape_strainlist(save_file):
     driver.get(strain_url)
@@ -53,7 +54,7 @@ def get_strains(strain_soup, update_pk=False, strain_pages_file='strain_pages_li
     # get list of strain pages
     strains = strain_soup.findAll('a', {'class': 'ga_Explore_Strain_Tile'}) + strain_soup.findAll('a', {'class': 'ng-scope'})
     strains = [s.get('href') for s in strains]
-    if not os.path.exists(strain_pages_file) or update:
+    if not os.path.exists(strain_pages_file) or update_pk:
         pk.dump(strains, open(strain_pages_file, 'w'), 2)
 
     return strains
@@ -76,25 +77,51 @@ def scrape_reviews_page_threads(driver, coll, url, genetics, verbose=True):
     threads = []
     if coll.find({'genetics': genetics}).count() < 1:
         coll.insert_one({'genetics': genetics})
-    if coll.find({'name': 'scrape_times'}).count() < 1:
+    if coll.find({'scrape_times': {'$exists':True}}).count() < 1:
         coll.insert_one({'scrape_times': [scrapetime]})
         coll.insert_one({'review_count': [num_reviews]})
     else:
-        coll.update_one({'scrape_times': {'$exists': true}}, {'$push': {'scrape_times': scrapetime}})
-        coll.update_one({'review_count': {'$exists': true}}, {'$push': {'review_count': num_reviews}})
+        coll.update_one({'scrape_times': {'$exists': True}}, {'$push': {'scrape_times': scrapetime}})
+        coll.update_one({'review_count': {'$exists': True}}, {'$push': {'review_count': num_reviews}})
         if coll.find({'review_count':{'$exists':'true'}}).next()['review_count'][-1] == num_reviews:
             print 'already up-to-date'
             return
-    for i in range(pages + 1):
-        cur_url = url + '/reviews?page=' + str(i)
-        if verbose:
-            print 'scraping', cur_url
-        #scrape_a_review_page(cur_url)
-        t = threading.Thread(target=scrape_a_review_page, args=(coll, cur_url))
-        t.start()
-        threads.append(t)
-    for th in threads:
-        th.join()
+    if pages < 30:
+        for i in range(pages + 1):
+            cur_url = url + '/reviews?page=' + str(i)
+            if verbose:
+                print 'scraping', cur_url
+            #scrape_a_review_page(cur_url)
+            t = threading.Thread(target=scrape_a_review_page, args=(coll, cur_url))
+            t.start()
+            threads.append(t)
+        for th in threads:
+            th.join()
+    else:
+        for j in range(pages / 30):
+            print 'scraping pages', j * 30, 'to', (j + 1) * 30
+            for i in range(j * 30, (j + 1) * 30):
+                cur_url = url + '/reviews?page=' + str(i)
+                if verbose:
+                    print 'scraping', cur_url
+                #scrape_a_review_page(cur_url)
+                t = threading.Thread(target=scrape_a_review_page, args=(coll, cur_url))
+                t.start()
+                threads.append(t)
+            for th in threads:
+                th.join()
+        if (pages % 30) != 0:
+            print 'scraping pages', (j + 1) * 30, 'to', pages + 1
+            for i in range((j + 1) * 30, pages + 1):
+                cur_url = url + '/reviews?page=' + str(i)
+                if verbose:
+                    print 'scraping', cur_url
+                #scrape_a_review_page(cur_url)
+                t = threading.Thread(target=scrape_a_review_page, args=(coll, cur_url))
+                t.start()
+                threads.append(t)
+            for th in threads:
+                th.join()
 
 def scrape_a_review_page(coll, url, verbose=True):
     '''
