@@ -6,8 +6,35 @@ import cPickle as pk
 from datetime import datetime
 import threading
 import os
+import multiprocessing as mp
 
-def scrape_strainlist(save_file, strain_url, driver):
+STRAIN_PAGE_FILE = 'leafly_strains_page.pk'
+BASE_URL = 'https://www.leafly.com'
+STRAIN_URL = BASE_URL + '/explore/sort-alpha'
+
+def setup_driver():
+    driver = webdriver.PhantomJS()
+    driver.set_window_size(1920, 1080)
+    return driver
+
+def load_strain_list():
+    if os.path.exists(strain_page_file):
+        strain_page = pk.load(open(strain_page_file))
+        strain_soup = bs(strain_page, 'lxml')
+        # get list of strain pages
+        strains = get_strains(strain_soup)
+        # check for newly-added strains
+        uptodate = check_if_strains_uptodate(strains, STRAIN_URL, driver)
+        if not uptodate:
+            strain_soup = scrape_strainlist(strain_page_file, STRAIN_URL, driver)
+            strains = get_strains(strain_soup, update_pk=True)
+    else:
+    strain_soup = scrape_strainlist(strain_page_file, STRAIN_URL, driver)
+    strains = get_strains(strain_soup, update_pk=True)
+
+    return strains
+
+def scrape_strainlist(save_file, strain_url=STRAIN_URL, driver):
     driver.get(strain_url)
     # keep clicking 'load more' until there is no more
     pause = 1
@@ -64,6 +91,13 @@ def get_strains(strain_soup, update_pk=False, strain_pages_file='strain_pages_li
 
     return strains
 
+def scrape_parallel(urls, pool_size=None):
+    if pool_size is None:
+        pool_size = mp.cpu_count()
+
+    pool = mp.Pool(processes=pool_size)
+    pool.map(func=scrape_reviews_page_threads, iterable=urls)
+
 def scrape_reviews_page_threads(driver, coll, url, genetics, verbose=True):
     '''
     scrapes reviews page for all reviews
@@ -73,8 +107,8 @@ def scrape_reviews_page_threads(driver, coll, url, genetics, verbose=True):
     each review consist of a tuple of (user, stars, review_text, datetime_of_review)
     '''
     # num photos is index 1
-    driver.get(url)
-    soup = bs(driver.page_source, 'lxml')
+    res = requests.get(url)
+    soup = bs(res.content, 'lxml')
     num_reviews = int(soup.findAll('span', {'class': 'hidden-xs'})[0].get_text().strip('(').strip(')'))
     print num_reviews, 'total reviews to scrape'
     pages = num_reviews / 8
@@ -163,38 +197,9 @@ def scrape_a_review_page(coll, url, verbose=True):
         coll.insert_one(datadict)
 
 if __name__ == "__main__":
+    # another site to scrape:
     # base_url = 'https://weedmaps.com/'
     # url = base_url + 'dispensaries/in/united-states/colorado/denver-downtown'
-
-    base_url = 'https://www.leafly.com/explore/sort-alpha'
-
-    driver = webdriver.PhantomJS()
-    driver.set_window_size(1920, 1080)
-    driver.get(base_url)
-    # keep clicking 'load more' until there is no more
-    pause = 2
-    tries = 0 # number of times tried to click button unsucessfully
-    lastHeight = driver.execute_script("return document.body.scrollHeight")
-    while True:
-        print 'scrolling down...'
-        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        try:
-            driver.find_element_by_xpath('//*[@id="main"]/div/section/div[2]/div/div/div[2]/div[3]/button').click()
-        except exception as e:
-            print exception
-            tries += 1
-            if tries == 3:
-                break
-            print 'end of strains'
-        time.sleep(pause)
-        newHeight = driver.execute_script("return document.body.scrollHeight")
-        if newHeight == lastHeight:
-            break
-        lastHeight = newHeight
-
-    soup = bs(driver.page_source, 'lxml')
-    pk.dump(soup, open('leafly_strain_soup.pk', 'w'), 2)
-    print len(soup.findAll('a', {'class': 'ga_Explore_Strain_Tile'}))
-    print len(soup.findAll('a', {'class': 'ng-scope'}))
-    # for strain in soup.findAll('a', {'class': 'ga_Explore_Strain_Tile'}):
-    #     print strain.get('href')
+    driver = setup_driver()
+    strains = load_strain_list()
+    scrape_parallel()
