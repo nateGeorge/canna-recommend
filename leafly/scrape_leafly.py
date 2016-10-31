@@ -7,34 +7,40 @@ from datetime import datetime
 import threading
 import os
 import multiprocessing as mp
+import itertools
+from pymongo import MongoClient
 
 STRAIN_PAGE_FILE = 'leafly_strains_page.pk'
 BASE_URL = 'https://www.leafly.com'
 STRAIN_URL = BASE_URL + '/explore/sort-alpha'
+
+DB_NAME = "leafly"
 
 def setup_driver():
     driver = webdriver.PhantomJS()
     driver.set_window_size(1920, 1080)
     return driver
 
+driver = setup_driver()
+
 def load_strain_list():
-    if os.path.exists(strain_page_file):
-        strain_page = pk.load(open(strain_page_file))
+    if os.path.exists(STRAIN_PAGE_FILE):
+        strain_page = pk.load(open(STRAIN_PAGE_FILE))
         strain_soup = bs(strain_page, 'lxml')
         # get list of strain pages
         strains = get_strains(strain_soup)
         # check for newly-added strains
-        uptodate = check_if_strains_uptodate(strains, STRAIN_URL, driver)
+        uptodate = check_if_strains_uptodate(strains, STRAIN_URL)
         if not uptodate:
-            strain_soup = scrape_strainlist(strain_page_file, STRAIN_URL, driver)
+            strain_soup = scrape_strainlist(STRAIN_PAGE_FILE, STRAIN_URL)
             strains = get_strains(strain_soup, update_pk=True)
     else:
-    strain_soup = scrape_strainlist(strain_page_file, STRAIN_URL, driver)
-    strains = get_strains(strain_soup, update_pk=True)
+        strain_soup = scrape_strainlist(STRAIN_PAGE_FILE, STRAIN_URL)
+        strains = get_strains(strain_soup, update_pk=True)
 
     return strains
 
-def scrape_strainlist(save_file, strain_url=STRAIN_URL, driver):
+def scrape_strainlist(save_file, strain_url=STRAIN_URL):
     driver.get(strain_url)
     # keep clicking 'load more' until there is no more
     pause = 1
@@ -63,7 +69,7 @@ def scrape_strainlist(save_file, strain_url=STRAIN_URL, driver):
     print len(soup.findAll('a', {'class': 'ng-scope'}))
     return soup
 
-def check_if_strains_uptodate(strains, strain_url, driver):
+def check_if_strains_uptodate(strains, strain_url):
     '''
     scrapes leafly main page to check if any new strains have been added
     '''
@@ -76,7 +82,10 @@ def check_if_strains_uptodate(strains, strain_url, driver):
     cur_strains = int(alpha_sort_soup.findAll('strong', {'class':'ng-binding'})[0].get_text())
     print 'found', cur_strains, 'strains on leafly'
     if cur_strains > strain_len:
+        print 'updating strainlist...'
         return False
+
+    print 'strainlist up-to-date!'
     return True
 
 def get_strains(strain_soup, update_pk=False, strain_pages_file='strain_pages_list.pk'):
@@ -91,14 +100,29 @@ def get_strains(strain_soup, update_pk=False, strain_pages_file='strain_pages_li
 
     return strains
 
-def scrape_parallel(urls, pool_size=None):
+def scrape_parallel(strains, pool_size=None):
     if pool_size is None:
         pool_size = mp.cpu_count()
 
+    #mp.freeze_support()
     pool = mp.Pool(processes=pool_size)
-    pool.map(func=scrape_reviews_page_threads, iterable=urls)
 
-def scrape_reviews_page_threads(driver, coll, url, genetics, verbose=True):
+    iterableList = []
+    for i, s in enumerate(strains):
+        review_page = BASE_URL + s
+        genetics = s.split('/')[1]
+        strain = s.split('/')[2]
+        coll = db[strain]
+        iterableList.append([review_page, genetics])
+
+    pool.map(func=scrape_reviews_page_threads_map, iterable=iterableList)
+
+
+def scrape_reviews_page_threads_map(arglist):
+    print 'scraping', arglist[0].split('/')[4]
+    scrape_reviews_page_threads(*arglist)
+
+def scrape_reviews_page_threads(url, genetics, verbose=True):
     '''
     scrapes reviews page for all reviews
     url is a string for the specified strain homepage
@@ -106,6 +130,9 @@ def scrape_reviews_page_threads(driver, coll, url, genetics, verbose=True):
     returns list of reviews
     each review consist of a tuple of (user, stars, review_text, datetime_of_review)
     '''
+    client = MongoClient()
+    db = client[DB_NAME]
+    coll = db[url.split('/')[4]]
     # num photos is index 1
     res = requests.get(url)
     soup = bs(res.content, 'lxml')
@@ -200,6 +227,5 @@ if __name__ == "__main__":
     # another site to scrape:
     # base_url = 'https://weedmaps.com/'
     # url = base_url + 'dispensaries/in/united-states/colorado/denver-downtown'
-    driver = setup_driver()
     strains = load_strain_list()
-    scrape_parallel()
+    scrape_parallel(strains)
