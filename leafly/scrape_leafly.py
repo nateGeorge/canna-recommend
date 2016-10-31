@@ -7,10 +7,10 @@ from datetime import datetime
 import threading
 import os
 
-def scrape_strainlist(save_file):
+def scrape_strainlist(save_file, strain_url, driver):
     driver.get(strain_url)
     # keep clicking 'load more' until there is no more
-    pause = 2
+    pause = 1
     tries = 0 # number of times tried to click button unsucessfully
     lastHeight = driver.execute_script("return document.body.scrollHeight")
     while True:
@@ -40,7 +40,9 @@ def check_if_strains_uptodate(strains, strain_url, driver):
     '''
     scrapes leafly main page to check if any new strains have been added
     '''
-    strain_len = len(strains)
+    strain_len = len(strains) + 2 # seems to be off by 2 for some reason
+    # leafly has problems counting apparantly, noticed it in the reviews
+    # counts too
     print 'currently have', strain_len, 'strains'
     driver.get(strain_url)
     alpha_sort_soup = bs(driver.page_source, 'lxml')
@@ -56,6 +58,9 @@ def get_strains(strain_soup, update_pk=False, strain_pages_file='strain_pages_li
     strains = [s.get('href') for s in strains]
     if not os.path.exists(strain_pages_file) or update_pk:
         pk.dump(strains, open(strain_pages_file, 'w'), 2)
+
+    strains = set(strains)
+    strains = sorted(list(strains))
 
     return strains
 
@@ -88,7 +93,7 @@ def scrape_reviews_page_threads(driver, coll, url, genetics, verbose=True):
             return
     if pages < 30:
         for i in range(pages + 1):
-            cur_url = url + '/reviews?page=' + str(i)
+            cur_url = url + '?page=' + str(i)
             if verbose:
                 print 'scraping', cur_url
             #scrape_a_review_page(cur_url)
@@ -101,7 +106,7 @@ def scrape_reviews_page_threads(driver, coll, url, genetics, verbose=True):
         for j in range(pages / 30):
             print 'scraping pages', j * 30, 'to', (j + 1) * 30
             for i in range(j * 30, (j + 1) * 30):
-                cur_url = url + '/reviews?page=' + str(i)
+                cur_url = url + '?page=' + str(i)
                 if verbose:
                     print 'scraping', cur_url
                 #scrape_a_review_page(cur_url)
@@ -113,7 +118,7 @@ def scrape_reviews_page_threads(driver, coll, url, genetics, verbose=True):
         if (pages % 30) != 0:
             print 'scraping pages', (j + 1) * 30, 'to', pages + 1
             for i in range((j + 1) * 30, pages + 1):
-                cur_url = url + '/reviews?page=' + str(i)
+                cur_url = url + '?page=' + str(i)
                 if verbose:
                     print 'scraping', cur_url
                 #scrape_a_review_page(cur_url)
@@ -132,6 +137,13 @@ def scrape_a_review_page(coll, url, verbose=True):
     reviews_soup = rev_soup.findAll('li', {'class': 'page-item divider bottom padding-listItem'})
     if verbose:
         print len(reviews_soup), 'reviews on page'
+    if len(reviews_soup) == 0: # try again
+        time.sleep(0.5)
+        res = requests.get(url)
+        rev_soup = bs(res.content, 'lxml')
+        reviews_soup = rev_soup.findAll('li', {'class': 'page-item divider bottom padding-listItem'})
+        if verbose:
+            print 'second try:', len(reviews_soup), 'reviews on page'
     for r in reviews_soup:
         user = r.findAll('a', {'class': 'no-color'})[0].get_text()
         stars = r.findAll('span', {'class': 'squeeze'})[0].get('star-rating')
