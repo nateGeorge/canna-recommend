@@ -203,7 +203,7 @@ def scrape_for_num(strain):
     db = client['leafly']
     coll = db['review_counts']
 
-    res = requests.get(BASE_URL + s, headers=headers)
+    res = requests.get(BASE_URL + strain + '/reviews', headers=headers)
     soup = bs(res.content, 'lxml')
     num_reviews = int(soup.findAll('span', {'class': 'hidden-xs'})[0].get_text().strip('(').strip(')'))
     print num_reviews, 'total reviews for', strain
