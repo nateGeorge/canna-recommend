@@ -1,52 +1,113 @@
 import requests
 from bs4 import BeautifulSoup as bs
 from selenium import webdriver
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 import time
 import cPickle as pk
 from datetime import datetime
 import threading
 import os
+from glob import iglob
 import multiprocessing as mp
 import itertools
 from pymongo import MongoClient
+from fake_useragent import UserAgent
+import random
 
-STRAIN_PAGE_FILE = 'leafly_strains_page.pk'
+ua = UserAgent()
+
+STRAIN_PAGE_FILE = 'leafly_alphabetic_strains_page_' + datetime.utcnow().isoformat()[:10] + '.pk'
+NEW_STRAIN_PAGE_FILE = 'leafly_newest_strains_page_' + datetime.utcnow().isoformat()[:10] + '.pk'
 BASE_URL = 'https://www.leafly.com'
 STRAIN_URL = BASE_URL + '/explore/sort-alpha'
 
-DB_NAME = "leafly"
+DB_NAME = 'leafly'
 
 def setup_driver():
-    driver = webdriver.PhantomJS()
+    dcap = dict(DesiredCapabilities.PHANTOMJS)
+    dcap["phantomjs.page.settings.userAgent"] = (
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/53 "
+        "(KHTML, like Gecko) Chrome/15.0.87"
+    )
+    driver = webdriver.PhantomJS(desired_capabilities=dcap)
     driver.set_window_size(1920, 1080)
     return driver
 
 driver = setup_driver()
 
 def load_strain_list():
-    if os.path.exists(STRAIN_PAGE_FILE):
-        strain_page = pk.load(open(STRAIN_PAGE_FILE))
-        strain_soup = bs(strain_page, 'lxml')
+    '''
+    * checks for latest strain list file and loads it if it's there
+    * if there, checks to make sure strain list is up to date and updates
+    with new strains if necessary
+    * otherwise scrolls through entire alphabetically-sorted strain list
+    (takes a long time)
+    '''
+    newest = max(iglob('strain_pages_list*.pk'), key=os.path.getctime)
+    if len(newest) > 0:
         # get list of strain pages
-        strains = get_strains(strain_soup)
+        strains = pk.load(open(newest))
         # check for newly-added strains
-        uptodate = check_if_strains_uptodate(strains, STRAIN_URL)
+        uptodate, diff = check_if_strains_uptodate(strains, STRAIN_URL)
         if not uptodate:
-            strain_soup = scrape_strainlist(STRAIN_PAGE_FILE, STRAIN_URL)
-            strains = get_strains(strain_soup, update_pk=True)
+            strains = update_strainlist(diff, strains, newest)
     else:
         strain_soup = scrape_strainlist(STRAIN_PAGE_FILE, STRAIN_URL)
         strains = get_strains(strain_soup, update_pk=True)
 
     return strains
 
+def update_strainlist(diff, strains, strain_file):
+    '''
+    checks leafly's recently added strains and adds to strain list
+    '''
+    strains = sorted(list(set(strains) | diff))
+    # save strainlist with todays date in filename
+    strain_pages_file = 'strain_pages_list' + datetime.now().isoformat()[:10] + '.pk'
+    pk.dump(strains, open(strain_pages_file, 'w'), 2)
+
+    return strains
+
 def scrape_strainlist(save_file, strain_url=STRAIN_URL):
+    '''
+    scrapes leafly's strainlist (alphabetically sorted) and saves all results in
+    'savefile'
+    * takes a while and should only be used to initially build the strainlist
+    * otherwise, use update_strainlist to get the most recent ones
+    '''
     driver.get(strain_url)
     # keep clicking 'load more' until there is no more
     pause = 1
     tries = 0 # number of times tried to click button unsucessfully
     lastHeight = driver.execute_script("return document.body.scrollHeight")
+    # for dealing with 21+ button and subscription button
+    age_screen = True
+    age_count = 0
+    signup = True
+    signup_count = 0
     while True:
+        if age_screen:
+            if age_count == 10:
+                age_screen = False
+            try:
+                driver.find_element_by_xpath('//a[@ng-click="answer(true)"]').click()
+                print 'clicked 21+ button'
+                age_screen == False
+            except:
+                pass
+            age_count += 1
+
+        if signup:
+            if signup_count == 10:
+                signup = False
+            try:
+                driver.find_element_by_xpath('//a[@ng-click="ecm.cancel()"]').click()
+                print 'clicked dont subscribe button'
+                signup == False
+            except:
+                pass
+            age_count += 1
+
         print 'scrolling down...'
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         try:
@@ -63,8 +124,9 @@ def scrape_strainlist(save_file, strain_url=STRAIN_URL):
             break
         lastHeight = newHeight
 
-    soup = bs(driver.page_source, 'lxml')
-    pk.dump(driver.page_source, open(save_file, 'w'), 2)
+    res = driver.page_source
+    soup = bs(res, 'lxml')
+    pk.dump(res, open(save_file, 'w'), 2)
     print len(soup.findAll('a', {'class': 'ga_Explore_Strain_Tile'}))
     print len(soup.findAll('a', {'class': 'ng-scope'}))
     return soup
@@ -72,24 +134,44 @@ def scrape_strainlist(save_file, strain_url=STRAIN_URL):
 def check_if_strains_uptodate(strains, strain_url):
     '''
     scrapes leafly main page to check if any new strains have been added
+
+    returns a flag (T/F) if needs update, as well as new strains/products not in
+    current DB
     '''
+    # need to lowercase all strains to match with updated ones
+    strains = [s.lower() for s in strains]
+
     strain_len = len(strains) + 2 # seems to be off by 2 for some reason
     # leafly has problems counting apparantly, noticed it in the reviews
     # counts too
     print 'currently have', strain_len, 'strains'
-    driver.get(strain_url)
-    alpha_sort_soup = bs(driver.page_source, 'lxml')
-    cur_strains = int(alpha_sort_soup.findAll('strong', {'class':'ng-binding'})[0].get_text())
+
+    # get strain list sorted by newest added
+    new_url = 'https://www.leafly.com/explore/sort-newest'
+    res = requests.get(new_url)
+    soup = bs(res.content, 'lxml')
+    pk.dump(res.content, open(NEW_STRAIN_PAGE_FILE, 'w'), 2)
+    new_strains = soup.findAll('a', {'class': 'ga_Explore_Strain_Tile'}) + soup.findAll('a', {'class': 'ng-scope'})
+    new_strains = set([s.get('href').lower() for s in new_strains])
+    strain_set = set(strains)
+    diff = new_strains.difference(strain_set)
+    print 'missing', len(diff), 'strains in current data'
+    #res = requests.get(strain_url)
+    alpha_sort_soup = bs(res.content, 'lxml')
+    cur_strains = int(alpha_sort_soup.findAll('strong', {'ng-bind':'totalResults'})[0].get_text())
     print 'found', cur_strains, 'strains on leafly'
-    if cur_strains > strain_len:
+    if cur_strains > strain_len or len(diff) > 0:
         print 'updating strainlist...'
-        return False
+        return False, diff
 
     print 'strainlist up-to-date!'
-    return True
+    return True, diff
 
-def get_strains(strain_soup, update_pk=False, strain_pages_file='strain_pages_list.pk'):
+def get_strains(strain_soup, update_pk=False, strain_pages_file=None):
     # get list of strain pages
+    if strain_pages_file is None:
+        strain_pages_file = 'strain_pages_list' + oformat()[:10] + '.pk'
+
     strains = strain_soup.findAll('a', {'class': 'ga_Explore_Strain_Tile'}) + strain_soup.findAll('a', {'class': 'ng-scope'})
     strains = [s.get('href') for s in strains]
     if not os.path.exists(strain_pages_file) or update_pk:
@@ -99,6 +181,35 @@ def get_strains(strain_soup, update_pk=False, strain_pages_file='strain_pages_li
     strains = sorted(list(strains))
 
     return strains
+
+def scrape_review_page_for_num(strains, pool_size=None):
+    '''
+    scrape all the reviews pages and gets number of reviews for each one
+    '''
+    if pool_size is None:
+        pool_size = mp.cpu_count()
+
+    pool = mp.Pool(processes=pool_size)
+    pool.map(func=scrape_for_num, iterable=strains)
+
+def scrape_for_num(strain):
+    agent = ua.random  # select a random user agent
+    headers = {
+                "Connection" : "close",  # another way to cover tracks
+                "User-Agent" : agent
+                }
+
+    client = MongoClient()
+    db = client['leafly']
+    coll = db['review_counts']
+
+    res = requests.get(BASE_URL + s, headers=headers)
+    soup = bs(res.content, 'lxml')
+    num_reviews = int(soup.findAll('span', {'class': 'hidden-xs'})[0].get_text().strip('(').strip(')'))
+    print num_reviews, 'total reviews for', strain
+    scrapetime = datetime.utcnow().isoformat()
+    coll.insert_one({'strain':strain, 'review_counts':num_reviews, 'datetime':scrapetime})
+    client.close()
 
 def scrape_parallel(strains, pool_size=None):
     if pool_size is None:
@@ -117,7 +228,6 @@ def scrape_parallel(strains, pool_size=None):
 
     pool.map(func=scrape_reviews_page_threads_map, iterable=iterableList)
 
-
 def scrape_reviews_page_threads_map(arglist):
     print 'scraping', arglist[0].split('/')[4]
     scrape_reviews_page_threads(*arglist)
@@ -130,10 +240,20 @@ def scrape_reviews_page_threads(url, genetics, verbose=True):
     returns list of reviews
     each review consist of a tuple of (user, stars, review_text, datetime_of_review)
     '''
+    agent = ua.random  # select a random user agent
+    headers = {
+    "Connection" : "close",  # another way to cover tracks
+    "User-Agent" : agent}
+    # need to connect to client in each thread
     client = MongoClient()
     db = client[DB_NAME]
     coll = db[url.split('/')[4]]
     # num photos is index 1
+    proxyDict = {
+              "http"  : http_proxy,
+              "https" : https_proxy,
+              "ftp"   : ftp_proxy
+            }
     res = requests.get(url)
     soup = bs(res.content, 'lxml')
     num_reviews = int(soup.findAll('span', {'class': 'hidden-xs'})[0].get_text().strip('(').strip(')'))
@@ -227,5 +347,7 @@ if __name__ == "__main__":
     # another site to scrape:
     # base_url = 'https://weedmaps.com/'
     # url = base_url + 'dispensaries/in/united-states/colorado/denver-downtown'
+
     strains = load_strain_list()
-    scrape_parallel(strains)
+    #scrape_parallel(strains)
+    pass
