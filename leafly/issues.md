@@ -1,5 +1,10 @@
+D1:
 Scraping coding is becoming huge, and having some problems in the threads.  For example:
 sometimes 0 results are returned (i.e. the page doesn't load).  Sometimes after a few tries it reloads.  Ideas for error handling?
 Same thing with the first page that checks number of reviews.  
 
 Removing dupes in mongo sucks.
+
+
+D2:
+Scraping function wasn't storing everything in the db I thought it should've been, had to write another function to re-grab what it wasn't getting.  Found a strain with the same name (chocolate kush) in both the hybrid and indica sections, which was screwing up the db since the collections are named by the product name
