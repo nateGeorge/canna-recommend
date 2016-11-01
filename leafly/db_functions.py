@@ -42,7 +42,6 @@ def get_list_of_scraped():
     for c in db.collection_names():
         if c in coll_skips:
             continue
-        print c
         scraped.append(c)
 
     client.close()
@@ -59,7 +58,6 @@ def count_strains():
     for c in db.collection_names():
         if c in coll_skips:
             continue
-        print c
         counts += 1
 
     client.close()
@@ -99,7 +97,6 @@ def remove_dupes(test=True):
     for c in db.collection_names():
         if c in coll_skips:
             continue
-        print c
         cursor = db[c].aggregate(
         [
             {"$group": {"_id": "$text", "unique_ids": {"$addToSet": "$_id"}, "unique_text": {"$addToSet": "$text"}, "count": {"$sum": 1}}},
