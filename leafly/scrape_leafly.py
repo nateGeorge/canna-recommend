@@ -23,7 +23,7 @@ NEW_STRAIN_PAGE_FILE = 'leafly_newest_strains_page_' + datetime.utcnow().isoform
 BASE_URL = 'https://www.leafly.com'
 STRAIN_URL = BASE_URL + '/explore/sort-alpha'
 
-DB_NAME = 'leafly'
+DB_NAME = 'leafly_backup_2016-11-01'#'leafly'
 
 def setup_driver():
     dcap = dict(DesiredCapabilities.PHANTOMJS)
@@ -225,7 +225,12 @@ def scrape_review_page_for_num(strains, pool_size=None):
     pool = mp.Pool(processes=pool_size)
     pool.map(func=scrape_for_num, iterable=strains)
 
-def scrape_for_num(strain):
+def scrape_for_num_onedb(strain):
+    '''
+    scrapes leafly for number of reviews for each strain
+    stores in one db called 'review_counts'
+    use scrape_for_num(strain) to store in main leafly db
+    '''
     agent = ua.random  # select a random user agent
     headers = {
                 "Connection" : "close",  # another way to cover tracks
@@ -242,6 +247,33 @@ def scrape_for_num(strain):
     print num_reviews, 'total reviews for', strain
     scrapetime = datetime.utcnow().isoformat()
     coll.insert_one({'strain':strain, 'review_counts':num_reviews, 'datetime':scrapetime})
+    client.close()
+
+def scrape_for_num(strain):
+    '''
+    updates review_count entry for each strain based on latest from site
+    '''
+    agent = ua.random  # select a random user agent
+    headers = {
+                "Connection" : "close",  # another way to cover tracks
+                "User-Agent" : agent
+                }
+
+    client = MongoClient()
+    db = client[DB_NAME]
+    coll = db[strain]
+
+    rev_cnt = []
+    while len(rev_cnt) == 0:
+        res = requests.get(BASE_URL + strain + '/reviews', headers=headers, cookies=cooks)
+        soup = bs(res.content, 'lxml')
+        rev_cnt = soup.findAll('span', {'class': 'hidden-xs'})
+        num_reviews = int(rev_cnt[0].get_text().strip('(').strip(')'))
+        time.sleep(2)
+    
+    print num_reviews, 'total reviews for', strain
+    scrapetime = datetime.utcnow().isoformat()
+    coll.insert_one({'review_counts':num_reviews})
     client.close()
 
 def scrape_reviews_parallel(strains, pool_size=None):
@@ -490,15 +522,11 @@ if __name__ == "__main__":
     # another site to scrape:
     # base_url = 'https://weedmaps.com/'
     # url = base_url + 'dispensaries/in/united-states/colorado/denver-downtown'
-
     strains = load_strain_list()
-    strains_left = range(10)
-    chunk_size = 10 # scrape 10 strains at a time so as not to overload anything
-    while len(strains_left) > 0:
-        print 'trying again'
-        strains_left = get_strains_left_to_scrape(strains)
-        for i in range(0, len(strains_left), chunk_size):
-            scrape_reviews_parallel(strains_left[i:(i + 1) * chunk_size])
-        
-        scrape_reviews_parallel(strains_left[(i + 1) * chunk_size:])
-        time.sleep(4)
+    # strains_left = range(10)
+    # chunk_size = 10 # scrape 10 strains at a time so as not to overload anything
+    # while len(strains_left) > 0:
+    #     print 'trying again'
+    #     strains_left = get_strains_left_to_scrape(strains)
+    #     scrape_reviews_parallel(strains_left)
+    #     time.sleep(4)
