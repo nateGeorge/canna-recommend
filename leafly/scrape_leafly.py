@@ -263,13 +263,16 @@ def scrape_reviews_page_threads_map(arglist):
     time.sleep(1.5)
     scrape_reviews_page_threads(*arglist)
 
-def scrape_reviews_page_threads(url, genetics, verbose=True):
+def scrape_reviews_page_threads(url, genetics, verbose=True, num_threads=10):
     '''
     scrapes reviews page for all reviews
     url is a string for the specified strain homepage
 
     returns list of reviews
     each review consist of a tuple of (user, stars, review_text, datetime_of_review)
+
+    num_threads is number of threads run at one time, I noticed it tends to
+    not work well when more than 30 are run at once
     '''
     agent = ua.random  # select a random user agent
     headers = {
@@ -329,8 +332,12 @@ def scrape_reviews_page_threads(url, genetics, verbose=True):
                 t = threading.Thread(target=scrape_a_review_page, args=(cur_url,))
                 t.start()
                 threads.append(t)
+            
             for th in threads:
                 th.join()
+
+            time.sleep(3)
+
         if (pages % 10) != 0:
             print 'scraping pages', (j + 1) * 10, 'to', pages + 1
             for i in range((j + 1) * 10, pages + 1):
@@ -474,8 +481,6 @@ def get_strains_left_to_scrape(strains):
     mask = np.array(mask)
     strains_left = strains[mask == 1]
     return strains_left
-
-
 
 if __name__ == "__main__":
     # another site to scrape:
