@@ -12,7 +12,8 @@ import multiprocessing as mp
 import itertools
 from pymongo import MongoClient
 from fake_useragent import UserAgent
-import random
+import db_functions as dbfunc
+import numpy as np
 
 ua = UserAgent()
 
@@ -279,13 +280,14 @@ def scrape_reviews_page_threads(url, genetics, verbose=True):
     client = MongoClient()
     db = client[DB_NAME]
     coll = db[url.split('/')[4]]
+    reviews_block = []
     while len(reviews_block) == 0:
         res = requests.get(url, cookies=cooks)
         soup = bs(res.content, 'lxml')
         reviews_block = soup.findAll('span', {'class': 'hidden-xs'})
-        num_reviews = int(reviews_block[0].get_text().strip('(').strip(')'))
         time.sleep(2)
 
+    num_reviews = int(reviews_block[0].get_text().strip('(').strip(')'))
     print num_reviews, 'total reviews to scrape'
     pages = num_reviews / 8
     scrapetime = datetime.utcnow().isoformat()
@@ -362,35 +364,38 @@ def scrape_a_review_page(url, verbose=True):
     reviews_soup = rev_soup.findAll('li', {'class': 'page-item divider bottom padding-listItem'})
     if verbose:
         print len(reviews_soup), 'reviews on page'
-    if len(reviews_soup) == 0: # try again
-        for i in range(3):
-            time.sleep(1)
-            res = requests.get(url, cookies=cooks)
-            rev_soup = bs(res.content, 'lxml')
-            reviews_soup = rev_soup.findAll('li', {'class': 'page-item divider bottom padding-listItem'})
-            if verbose:
-                print 'try try again:', len(reviews_soup), 'reviews on page'
-            if len(reviews_soup) != 0:
-                break
+    try:
+        if len(reviews_soup) == 0: # try again
+            for i in range(3):
+                time.sleep(1)
+                res = requests.get(url, cookies=cooks)
+                rev_soup = bs(res.content, 'lxml')
+                reviews_soup = rev_soup.findAll('li', {'class': 'page-item divider bottom padding-listItem'})
+                if verbose:
+                    print 'try try again:', len(reviews_soup), 'reviews on page'
+                if len(reviews_soup) != 0:
+                    break
 
-    coll2.insert_one({'page':url, 'review_count':len(reviews_soup)})
-    for r in reviews_soup:
-        user = r.findAll('a', {'class': 'no-color'})[0].get_text()
-        stars = r.findAll('span', {'class': 'squeeze'})[0].get('star-rating')
-        text = r.findAll('p', {'class': 'copy--xs copy-md--md'})[0].get_text()[1:-1]
-        review_link = r.findAll('a', {'class': 'copy--xs copy-md--md'})[0].get('href')
-        date = r.findAll('time', \
-                         {'class': \
-                          'copy--xs copy-md--sm timestamp pull-right hidden-xs hidden-sm'}) \
-                            [0].get('datetime')
+        coll2.insert_one({'page':url, 'review_count':len(reviews_soup)})
+        for r in reviews_soup:
+            user = r.findAll('a', {'class': 'no-color'})[0].get_text()
+            stars = r.findAll('span', {'class': 'squeeze'})[0].get('star-rating')
+            text = r.findAll('p', {'class': 'copy--xs copy-md--md'})[0].get_text()[1:-1]
+            review_link = r.findAll('a', {'class': 'copy--xs copy-md--md'})[0].get('href')
+            date = r.findAll('time', \
+                             {'class': \
+                              'copy--xs copy-md--sm timestamp pull-right hidden-xs hidden-sm'}) \
+                                [0].get('datetime')
 
-        datadict = {}
-        datadict['user'] = user
-        datadict['stars'] = stars
-        datadict['text'] = text
-        datadict['link'] = review_link
-        datadict['date'] = date
-        coll.insert_one(datadict)
+            datadict = {}
+            datadict['user'] = user
+            datadict['stars'] = stars
+            datadict['text'] = text
+            datadict['link'] = review_link
+            datadict['date'] = date
+            coll.insert_one(datadict)
+    except Exception as e:
+        print 'ERROR DAMMIT:', e
 
     client.close()
 
@@ -455,6 +460,22 @@ def scrape_remainder(strains):
 
     scrape_reviews_parallel(needs_update)
 
+def get_strains_left_to_scrape(strains):
+    scraped = set(dbfunc.get_list_of_scraped())
+    strains = np.array(strains)
+    strains_abbrev = [s.split('/')[-1] for s in strains]
+    mask = []
+    for s in strains_abbrev:
+        if s in scraped:
+            mask.append(0)
+        else:
+            mask.append(1)
+
+    mask = np.array(mask)
+    strains_left = strains[mask == 1]
+    return strains_left
+
+
 
 if __name__ == "__main__":
     # another site to scrape:
@@ -462,4 +483,8 @@ if __name__ == "__main__":
     # url = base_url + 'dispensaries/in/united-states/colorado/denver-downtown'
 
     strains = load_strain_list()
-    scrape_reviews_parallel(strains)
+    strains_left = 10
+    while strains_left > 0:
+        print 'trying again'
+        strains_left = get_strains_left_to_scrape(strains)
+        scrape_reviews_parallel(strains_left)
