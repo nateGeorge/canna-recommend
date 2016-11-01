@@ -10,3 +10,7 @@ D2:
 Scraping function wasn't storing everything in the db I thought it should've been, had to write another function to re-grab what it wasn't getting.  Found a strain with the same name (chocolate kush) in both the hybrid and indica sections, which was screwing up the db since the collections are named by the product name
 
 Another problem was the removing duplicates function.  When aggregating in mongo, if the entry doesn't have the field you're trying to aggregate on, you have to make an exception for that, and ignore it in the match part of the aggregation.
+
+Review counts are not correct: for example,
+https://www.leafly.com/hybrid/hobbit/reviews?page=0
+says 1 review, but there are none.
