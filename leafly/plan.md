@@ -14,6 +14,12 @@ eda
 nlp
 -topics
 -medical uses
+-tfidf on strain name
+-cluster by tfidf
+
+chemical fingerprint
+-cluster
+-outliers
 
 graphlab
 -make train/test
