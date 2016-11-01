@@ -1,6 +1,7 @@
 scraping
 -remove dupes from mongodb (PITA)
 -auto update with leafly
+-parse strain fingerprint from leafly (computer vision)
 -check number of reviews in db and compare with number scraped (+1)
 -scrape analytical360.com
 -scrape inventories in denver
