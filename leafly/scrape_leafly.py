@@ -579,3 +579,11 @@ if __name__ == "__main__":
     #     strains_left = get_strains_left_to_scrape(strains)
     #     scrape_reviews_parallel(strains_left)
     #     time.sleep(4)
+
+    # to re-scrape those with some missing data:
+    # gonna have to run a few times...
+    ns, df = dbfunc.check_scraped_reviews()
+    needs_scrape = list(df[df['needs_scrape'] == 1]['product'].values)
+    needs_scrape = set([n.lower() for n in needs_scrape])
+    strains_left = [s for s in strains if s.split('/')[-1].lower() in needs_scrape]
+    scrape_reviews_parallel(strains_left)

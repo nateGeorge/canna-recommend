@@ -116,6 +116,9 @@ def remove_dupes(test=True, dbname=None):
         cursor = db[c].aggregate(
         [
             {"$group": {"_id": "$text",
+                        "scrape_times": {"$addToSet": "$scrape_times"},
+                        "review_count": {"$addToSet": "$review_count"},
+                        "genetics": {"$addToSet": "$genetics"},
                         "unique_ids": {"$addToSet": "$_id"},
                         "unique_text": {"$addToSet": "$text"},
                         "count": {"$sum": 1}
@@ -141,8 +144,21 @@ def remove_dupes(test=True, dbname=None):
 
         cursor = db[c].aggregate(
         [
-            {"$group": {"_id": "$text", "unique_text": {"$addToSet": "$text"}, "count": {"$sum": 1}}},
-            {"$match": {"count": { "$gte": 2 }}}
+            {"$group": {"_id": "$text",
+                        "scrape_times": {"$addToSet": "$scrape_times"},
+                        "review_count": {"$addToSet": "$review_count"},
+                        "genetics": {"$addToSet": "$genetics"},
+                        "unique_ids": {"$addToSet": "$_id"},
+                        "unique_text": {"$addToSet": "$text"},
+                        "count": {"$sum": 1}
+                        }
+            },
+            {"$match": {"count": { "$gte": 2 },
+                       "scrape_times":{"$exists":False},
+                       "review_count":{"$exists":False},
+                       "genetics":{"$exists":False}
+                       }
+            }
         ]
         )
         cur = list(cursor)
@@ -268,12 +284,15 @@ def check_scraped_reviews(dbname=None):
             continue
         rev_cnt = db[c].find({'review_count': {'$exists':True}}).count()
         if rev_cnt > 0:
-            rev_cnt = db[c].find({'review_count': {'$exists':True}})[0]['review_count'][-1] + 1 # correct for leafly miscounting
+            rev_cnt = db[c].find({'review_count': {'$exists':True}})[0]['review_count'][-1]
+            # sometimes review counts are off by one, other times not...
+            # if rev_cnt != 0:
+            #     rev_cnt += 1 # correct for leafly miscounting
             count = db[c].count() - 3 # correct for metainfo entries
             reviews_scraped.append(count)
             products.append(c)
             review_count.append(rev_cnt)
-            if rev_cnt != count:
+            if rev_cnt > count:
                 needs_scrape.append(1)
             else:
                 needs_scrape.append(0)
