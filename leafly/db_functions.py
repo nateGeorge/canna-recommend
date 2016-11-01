@@ -28,7 +28,7 @@ def count_reviews(dbname=DB_NAME):
     for c in db.collection_names():
         if c in coll_skips:
             continue
-        count = db[c].count()
+        count = db[c].count() - 3 # correct for info entries
         print c, 'number of reviews:', count
         total += count
 
@@ -67,14 +67,23 @@ def count_strains():
     client.close()
     return counts
 
-def backup_dataset():
+def backup_dataset(db1=DB_NAME, db2=None):
     '''
     copies and backs up current dataset
     '''
-    pass
+    if db2 is None:
+        db2 = db1 + '_backup_' + datetime.now().isoformat()[:10]
+
     client = MongoClient()
-    db = client[DB_NAME]
-    db2 = client[DB_NAME + '_backup_' + datetime.now().isoformat()[:10]]
+    db_names = client.database_names()
+    if db2 in db_names:
+        i = 2
+        while db2 in db_names:
+            db2 = db2 + '_' + str(i)
+            i += 1
+
+    db = client[db1]
+    db2 = client[db2]
     for c in db.collection_names():
         if c == 'system.indexes':
             continue
@@ -83,21 +92,24 @@ def backup_dataset():
 
     client.close()
 
-def remove_dupes(test=True):
+def remove_dupes(test=True, dbname=None):
     '''
     removes dupes by matches in text entry.
     Nice example here: http://stackoverflow.com/questions/34722866/pymongo-remove-duplicates-map-reduce
     '''
-    testdb_name = DB_NAME + '_backup_' + datetime.now().isoformat()[:10]
     client = MongoClient()
     if test:
-        if testdb_name not in client.database_names():
+        db_name = DB_NAME + '_backup_' + datetime.now().isoformat()[:10]
+        if db_name not in client.database_names():
             backup_dataset()
-        db = client[testdb_name]
+        db = client[db_name]
     else:
-        db = client[DB_NAME]
+        if dbname is None:
+            db = client[DB_NAME]
+        else:
+            db = client[dbname]
 
-    coll_skips = set(['system.indexes', 'review_counts'])
+    coll_skips = set(['system.indexes'])
     for c in db.collection_names():
         if c in coll_skips:
             continue
@@ -184,3 +196,74 @@ def test_remove_dupes(c):
     client.close()
     df = pd.DataFrame(list(db[c].find()))
     return cursor, df
+
+def check_if_rev_count(dbname=None):
+    '''
+    finding that some of the entries don't have the review count
+    this checks for which ones do have it, and returns a list of those that don't
+    '''
+    if dbname is None:
+        dbname = DB_NAME
+
+    client = MongoClient()
+    db = client[dbname]
+    coll_skips = set(['system.indexes', 'review_counts'])
+    #
+    has_rev_cnt = []
+    products = []
+    for c in db.collection_names():
+        if c in coll_skips:
+            continue
+        print c
+        rev_cnt = db[c].find({'review_count': {'$exists':True}}).count()
+        if rev_cnt > 0:
+            has_rev_cnt.append(1)
+        else:
+            has_rev_cnt.append(0)
+        products.append(c)
+
+    df = pd.DataFrame({'product':products, 'has_review_count':has_rev_cnt})
+
+    print 'number products with review count:', df[df['has_review_count'] == 1].shape[0]
+    print 'number products withOUT review count:', df[df['has_review_count'] == 0].shape[0]
+
+    return df
+
+
+def check_scraped_reviews(dbname=None):
+    '''
+    first removes duplicates in db
+    then counts how many reviews are there for each product
+    compares counts to how many were listed on the site
+    returns a list of strains that need re-scraping
+    '''
+    if dbname is None:
+        dbname = DB_NAME
+
+    client = MongoClient()
+    db = client[dbname]
+    remove_dupes(test=False, dbname=dbname)
+    coll_skips = set(['system.indexes', 'review_counts'])
+    #
+    reviews_scraped = []
+    products = []
+    needs_scrape = []
+    for c in db.collection_names():
+        if c in coll_skips:
+            continue
+        print c
+        rev_cnt = db[c].find({'review_count': {'$exists':True}}).count()
+        if len(rev_cnt) > 0:
+            rev_cnt = db[c].find({'review_count': {'$exists':True}})[0]['review_count'] + 1 # correct for leafly miscounting
+            count = db[c].count() - 3 # correct for info entries
+            reviews_scraped.append(count)
+            products.append(c)
+            online_count.append(rev_cnt)
+        else:
+            needs_scrape.append(c)
+            products.append(c)
+            online_count.append(rev_cnt)
+
+    df = pd.DataFrame({'product':products, 'reviews_scraped':reviews_scraped})
+
+    return needs_scrape, df
