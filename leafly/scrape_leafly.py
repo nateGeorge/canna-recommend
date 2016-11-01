@@ -401,6 +401,10 @@ def scrape_reviews_page_threads(strain, url, genetics, verbose=True, num_threads
         for th in threads:
             th.join()
     else:
+        if pages > 50:
+            delay = 10
+        else:
+            delay = 5
         for j in range(pages / 10):
             print 'scraping pages', j * 10, 'to', (j + 1) * 10
             for i in range(j * 10, (j + 1) * 10):
@@ -415,7 +419,7 @@ def scrape_reviews_page_threads(strain, url, genetics, verbose=True, num_threads
             for th in threads:
                 th.join()
 
-            time.sleep(5)
+            time.sleep(delay)
 
         if (pages % 10) != 0:
             print 'scraping pages', (j + 1) * 10, 'to', pages + 1
@@ -456,10 +460,11 @@ def scrape_a_review_page(url, verbose=True):
     if verbose:
         print len(reviews_soup), 'reviews on page'
     try:
+        delay = 1
         if len(reviews_soup) == 0: # try again
             for i in range(5):
-                time.sleep(1)
-                delay_penalty += 1
+                time.sleep(delay)
+                delay += 1
                 res = requests.get(url, cookies=cooks)
                 rev_soup = bs(res.content, 'lxml')
                 reviews_soup = rev_soup.findAll('li', {'class': 'page-item divider bottom padding-listItem'})
