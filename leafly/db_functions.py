@@ -1,6 +1,7 @@
 # drops all collections except for review_counts
 from pymongo import MongoClient
 import pandas as pd
+from datetime import datetime
 
 DB_NAME = 'leafly'
 
@@ -13,6 +14,20 @@ def drop_everything():
             continue
         print c
         db[c].drop()
+
+    client.close()
+
+def count_reviews():
+    '''
+    counts number of reviews for each strain in the db
+    '''
+    client = MongoClient()
+    db = client[DB_NAME]
+    coll_skips = set(['system.indexes', 'review_counts'])
+    for c in db.collection_names():
+        if c in coll_skips:
+            continue
+        print c, 'number of reviews:', db[c].count()
 
     client.close()
 
@@ -33,11 +48,68 @@ def count_strains():
     client.close()
     return counts
 
-def remove_dupes():
+def backup_dataset():
     '''
-    removes dupes by matches in all columns but _id.  Can't believe there isn't
-    already a Mongo function for this already?! WTP
+    copies and backs up current dataset
     '''
+    pass
+    client = MongoClient()
+    db = client[DB_NAME]
+    db2 = client[DB_NAME + '_backup_' + datetime.now().isoformat()[:10]]
+    for c in db.collection_names():
+        if c == 'system.indexes':
+            continue
+        print c
+        db2[c].insert_many(db[c].find())
+
+    client.close()
+
+def remove_dupes(test=True):
+    '''
+    removes dupes by matches in text entry.
+    Nice example here: http://stackoverflow.com/questions/34722866/pymongo-remove-duplicates-map-reduce
+    '''
+    testdb_name = DB_NAME + '_backup_' + datetime.now().isoformat()[:10]
+    client = MongoClient()
+    if test:
+        if testdb_name not in client.database_names():
+            backup_dataset()
+        db = client[testdb_name]
+    else:
+        db = client[DB_NAME]
+
+    coll_skips = set(['system.indexes', 'review_counts'])
+    for c in db.collection_names():
+        if c in coll_skips:
+            continue
+        print c
+        cursor = db[c].aggregate(
+        [
+            {"$group": {"_id": "$text", "unique_ids": {"$addToSet": "$_id"}, "unique_text": {"$addToSet": "$text"}, "count": {"$sum": 1}}},
+            {"$match": {"count": { "$gte": 2 }}}
+        ]
+        )
+
+        response = []
+        for doc in cursor:
+            del doc["unique_ids"][0]
+            for id in doc["unique_ids"]:
+                response.append(id)
+
+        print 'removing', len(response), 'dupes from', c
+        db[c].delete_many({"_id": {"$in": response}})
+
+        cursor = db[c].aggregate(
+        [
+            {"$group": {"_id": "$text", "unique_text": {"$addToSet": "$text"}, "count": {"$sum": 1}}},
+            {"$match": {"count": { "$gte": 2 }}}
+        ]
+        )
+        cur = list(cursor)
+        if len(cur) != 0:
+            raise Exception('still', len(cur), 'dupes left:', cur)
+
+    client.close()
 
 def subset_data():
     '''
