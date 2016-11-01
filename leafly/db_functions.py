@@ -3,7 +3,7 @@ from pymongo import MongoClient
 import pandas as pd
 from datetime import datetime
 
-DB_NAME = 'leafly'
+DB_NAME = 'leafly_backup_2016-11-01'#'leafly'
 
 def drop_everything():
     client = MongoClient()
@@ -24,7 +24,7 @@ def count_reviews(dbname=DB_NAME):
     client = MongoClient()
     db = client[dbname]
     total = 0
-    coll_skips = set(['system.indexes', 'review_counts'])
+    coll_skips = set(['system.indexes', 'review_counts', 'scraped_review_pages'])
     for c in db.collection_names():
         if c in coll_skips:
             continue
@@ -35,14 +35,14 @@ def count_reviews(dbname=DB_NAME):
     client.close()
     return total
 
-def get_list_of_scraped():
+def get_list_of_scraped(dbname=DB_NAME):
     '''
     returns list of strains that have been scraped
     '''
     client = MongoClient()
-    db = client[DB_NAME]
+    db = client[dbname]
     scraped = []
-    coll_skips = set(['system.indexes', 'review_counts'])
+    coll_skips = set(['system.indexes', 'review_counts', 'scraped_review_pages'])
     for c in db.collection_names():
         if c in coll_skips:
             continue
@@ -58,7 +58,7 @@ def count_strains():
     client = MongoClient()
     db = client[DB_NAME]
     counts = 0
-    coll_skips = set(['system.indexes', 'review_counts'])
+    coll_skips = set(['system.indexes', 'review_counts', 'scraped_review_pages'])
     for c in db.collection_names():
         if c in coll_skips:
             continue
@@ -109,14 +109,24 @@ def remove_dupes(test=True, dbname=None):
         else:
             db = client[dbname]
 
-    coll_skips = set(['system.indexes'])
+    coll_skips = set(['system.indexes', 'review_counts', 'scraped_review_pages'])
     for c in db.collection_names():
         if c in coll_skips:
             continue
         cursor = db[c].aggregate(
         [
-            {"$group": {"_id": "$text", "unique_ids": {"$addToSet": "$_id"}, "unique_text": {"$addToSet": "$text"}, "count": {"$sum": 1}}},
-            {"$match": {"count": { "$gte": 2 }}}
+            {"$group": {"_id": "$text",
+                        "unique_ids": {"$addToSet": "$_id"},
+                        "unique_text": {"$addToSet": "$text"},
+                        "count": {"$sum": 1}
+                        }
+            },
+            {"$match": {"count": { "$gte": 2 },
+                       "scrape_times":{"$exists":False},
+                       "review_count":{"$exists":False},
+                       "genetics":{"$exists":False}
+                       }
+            }
         ]
         )
 
@@ -147,7 +157,7 @@ def subset_data():
     '''
     client = MongoClient()
     db = client[DB_NAME]
-    coll_skips = set(['system.indexes', 'review_counts'])
+    coll_skips = set(['system.indexes'])
     # looks for something with a sufficient amount of entries that probably has duplicates
     for c in db.collection_names():
         if c in coll_skips:
@@ -178,6 +188,10 @@ def test_remove_dupes(c):
         {"$match": {"count": { "$gte": 2 }}}
     ]
     )
+
+    cursor = list(cursor)
+    print cursor
+    return
 
     response = []
     for doc in cursor:
@@ -243,27 +257,65 @@ def check_scraped_reviews(dbname=None):
     client = MongoClient()
     db = client[dbname]
     remove_dupes(test=False, dbname=dbname)
-    coll_skips = set(['system.indexes', 'review_counts'])
+    coll_skips = set(['system.indexes', 'review_counts', 'scraped_review_pages'])
     #
     reviews_scraped = []
     products = []
     needs_scrape = []
+    review_count = []
     for c in db.collection_names():
         if c in coll_skips:
             continue
-        print c
         rev_cnt = db[c].find({'review_count': {'$exists':True}}).count()
-        if len(rev_cnt) > 0:
-            rev_cnt = db[c].find({'review_count': {'$exists':True}})[0]['review_count'] + 1 # correct for leafly miscounting
-            count = db[c].count() - 3 # correct for info entries
+        if rev_cnt > 0:
+            rev_cnt = db[c].find({'review_count': {'$exists':True}})[0]['review_count'][-1] + 1 # correct for leafly miscounting
+            count = db[c].count() - 3 # correct for metainfo entries
             reviews_scraped.append(count)
             products.append(c)
-            online_count.append(rev_cnt)
+            review_count.append(rev_cnt)
+            if rev_cnt != count:
+                needs_scrape.append(1)
+            else:
+                needs_scrape.append(0)
         else:
-            needs_scrape.append(c)
+            print c
+            reviews_scraped.append(0)
             products.append(c)
-            online_count.append(rev_cnt)
+            review_count.append(rev_cnt)
+            needs_scrape.append(1)
 
-    df = pd.DataFrame({'product':products, 'reviews_scraped':reviews_scraped})
+    df = pd.DataFrame({'product':products, 'reviews_scraped':reviews_scraped, 'review_count':review_count, 'needs_scrape':needs_scrape})
+    print df[df['needs_scrape'] == 1].shape[0], 'products need scraping out of', df.shape[0]
 
     return needs_scrape, df
+
+def check_for_metadata(dbname=DB_NAME):
+    '''
+    counts number of entries with genetics as a data field
+    also for scrape_times
+    '''
+    client = MongoClient()
+    db = client[dbname]
+    coll_skips = set(['system.indexes', 'review_counts', 'scraped_review_pages'])
+    #
+    products = []
+    has_genetics = []
+    has_time = []
+    has_cnt = []
+    for c in db.collection_names():
+        if c in coll_skips:
+            continue
+        gen_cnt = db[c].find({'genetics': {'$exists':True}}).count()
+        time_cnt = db[c].find({'scrape_times': {'$exists':True}}).count()
+        rev_cnt = db[c].find({'review_count': {'$exists':True}}).count()
+        products.append(c)
+        has_genetics.append(gen_cnt)
+        has_time.append(time_cnt)
+        has_cnt.append(rev_cnt)
+
+    df = pd.DataFrame({'product':products, 'gen_cnt':has_genetics, 'time_cnt':has_time, 'rev_cnt':has_cnt})
+    print df.shape[0], 'total products,', df.gen_cnt.sum(), \
+        'count with genetics', df.time_cnt.sum(), 'with scrapetimes', \
+        df.rev_cnt.sum(), 'with review_count'
+
+    return df
