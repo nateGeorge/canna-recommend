@@ -15,6 +15,7 @@ from fake_useragent import UserAgent
 import db_functions as dbfunc
 import numpy as np
 
+delay_penalty = 1 # time to wait until starting next thread if can't scrape current one
 ua = UserAgent()
 
 STRAIN_PAGE_FILE = 'leafly_alphabetic_strains_page_' + datetime.utcnow().isoformat()[:10] + '.pk'
@@ -336,7 +337,7 @@ def scrape_reviews_page_threads(url, genetics, verbose=True, num_threads=10):
             for th in threads:
                 th.join()
 
-            time.sleep(3)
+            time.sleep(5)
 
         if (pages % 10) != 0:
             print 'scraping pages', (j + 1) * 10, 'to', pages + 1
@@ -358,6 +359,8 @@ def scrape_a_review_page(url, verbose=True):
     scrapes review page and puts all the info in a mongodb, because it is unordered
     * verbose doesn't quite work correctly, lines will overlap sometimes
     '''
+    global delay_penalty
+
     client = MongoClient()
     db = client[DB_NAME]
     strain = url.split('/')[4]
@@ -375,6 +378,7 @@ def scrape_a_review_page(url, verbose=True):
         if len(reviews_soup) == 0: # try again
             for i in range(5):
                 time.sleep(1)
+                delay_penalty += 1
                 res = requests.get(url, cookies=cooks)
                 rev_soup = bs(res.content, 'lxml')
                 reviews_soup = rev_soup.findAll('li', {'class': 'page-item divider bottom padding-listItem'})
@@ -489,8 +493,12 @@ if __name__ == "__main__":
 
     strains = load_strain_list()
     strains_left = range(10)
+    chunk_size = 10 # scrape 10 strains at a time so as not to overload anything
     while len(strains_left) > 0:
         print 'trying again'
         strains_left = get_strains_left_to_scrape(strains)
-        scrape_reviews_parallel(strains_left)
+        for i in range(0, len(strains_left), chunk_size):
+            scrape_reviews_parallel(strains_left[i:(i + 1) * chunk_size])
+        
+        scrape_reviews_parallel(strains_left[(i + 1) * chunk_size:])
         time.sleep(4)
