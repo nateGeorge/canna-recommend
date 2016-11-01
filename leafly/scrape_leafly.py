@@ -332,7 +332,7 @@ def scrape_reviews_page_threads(url, genetics, verbose=True, num_threads=10):
                 t = threading.Thread(target=scrape_a_review_page, args=(cur_url,))
                 t.start()
                 threads.append(t)
-            
+
             for th in threads:
                 th.join()
 
@@ -373,7 +373,7 @@ def scrape_a_review_page(url, verbose=True):
         print len(reviews_soup), 'reviews on page'
     try:
         if len(reviews_soup) == 0: # try again
-            for i in range(3):
+            for i in range(5):
                 time.sleep(1)
                 res = requests.get(url, cookies=cooks)
                 rev_soup = bs(res.content, 'lxml')
@@ -488,8 +488,9 @@ if __name__ == "__main__":
     # url = base_url + 'dispensaries/in/united-states/colorado/denver-downtown'
 
     strains = load_strain_list()
-    strains_left = 10
-    while strains_left > 0:
+    strains_left = range(10)
+    while len(strains_left) > 0:
         print 'trying again'
         strains_left = get_strains_left_to_scrape(strains)
         scrape_reviews_parallel(strains_left)
+        time.sleep(4)
