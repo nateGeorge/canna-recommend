@@ -17,19 +17,23 @@ def drop_everything():
 
     client.close()
 
-def count_reviews():
+def count_reviews(dbname=DB_NAME):
     '''
     counts number of reviews for each strain in the db
     '''
     client = MongoClient()
-    db = client[DB_NAME]
+    db = client[dbname]
+    total = 0
     coll_skips = set(['system.indexes', 'review_counts'])
     for c in db.collection_names():
         if c in coll_skips:
             continue
-        print c, 'number of reviews:', db[c].count()
+        count = db[c].count()
+        print c, 'number of reviews:', count
+        total += count
 
     client.close()
+    return total
 
 def get_list_of_scraped():
     '''
