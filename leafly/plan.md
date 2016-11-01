@@ -9,7 +9,7 @@ eda
 -number of reviews per strain
 -number of reviews per user
 -distribution of review stars
--
+
 nlp
 -topics
 -medical uses
@@ -25,7 +25,8 @@ react app
 -add in recommender
 
 custom recommender
--pyfm
+-pyfm https://github.com/coreylynch/pyFM
+-fastfm https://github.com/ibayer/fastFM
 -tensorflow?
 
 migrate database from mongo to SQL
