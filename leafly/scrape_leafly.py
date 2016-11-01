@@ -36,6 +36,11 @@ def setup_driver():
     return driver
 
 def clear_prompts():
+    '''
+    clears 'are you 21+?' and 'signup for newsletter' prompts
+    clicks the buttons so they go away
+    make sure to save and use the cookies from the driver after this
+    '''
     driver.get(STRAIN_URL)
     age_screen = True
     age_count = 0
@@ -187,6 +192,14 @@ def check_if_strains_uptodate(strains, strain_url):
     new_strains = soup.findAll('a', {'class': 'ga_Explore_Strain_Tile'}) + soup.findAll('a', {'class': 'ng-scope'})
     new_strains = set([s.get('href').lower() for s in new_strains])
     strain_set = set(strains)
+    # check if more duplicates than just chocolate-kush (which has been handled)
+    coll_names = [s.split('/')[-1] for s in strains]
+    if len(coll_names) - len(set(coll_names)) > 1:
+        df = pd.DataFrame(coll_names)
+        vc = df[0].value_counts()
+        print 'new duplicates:', vc[vc > 1]
+        raise Exception('we got a problem: more duplicate strains')
+
     diff = new_strains.difference(strain_set)
     print 'missing', len(diff), 'strains in current data'
     #res = requests.get(strain_url, cookies=cooks)
@@ -203,15 +216,24 @@ def check_if_strains_uptodate(strains, strain_url):
 def get_strains(strain_soup, update_pk=False, strain_pages_file=None):
     # get list of strain pages
     if strain_pages_file is None:
-        strain_pages_file = 'strain_pages_list' + oformat()[:10] + '.pk'
+        strain_pages_file = 'strain_pages_list' + datetime.now().isoformat()[:10] + '.pk'
 
     strains = strain_soup.findAll('a', {'class': 'ga_Explore_Strain_Tile'}) + strain_soup.findAll('a', {'class': 'ng-scope'})
     strains = [s.get('href') for s in strains]
     if not os.path.exists(strain_pages_file) or update_pk:
         pk.dump(strains, open(strain_pages_file, 'w'), 2)
 
+    orig = strains.copy()
     strains = set(strains)
     strains = sorted(list(strains))
+
+    coll_names = [s.split('/')[-1] for s in orig]
+
+    if len(coll_names) - len(set(coll_names)) > 1:
+        df = pd.DataFrame(coll_names)
+        vc = df[0].value_counts()
+        print 'new duplicates:', vc[vc > 1]
+        raise Exception('we got a problem: more duplicate strains')
 
     return strains
 
@@ -261,7 +283,20 @@ def scrape_for_num(strain):
 
     client = MongoClient()
     db = client[DB_NAME]
-    coll = db[strain]
+    if strain == '/Indica/chocolate-kush':
+        coll = db['chocolate-kush-indica']
+    else:
+        coll = db[strain.split('/')[-1]]
+
+    genetics = strain.split('/')[1]
+
+    if coll.find({'genetics': genetics}).count() == 0:
+        coll.insert_one({'genetics': genetics})
+    if coll.find({'scrape_times': {'$exists': True}}).count() == 0:
+        scrapetime = datetime.utcnow().isoformat()
+        coll.insert_one({'scrape_times': [scrapetime]})
+    if coll.find({'review_count': {'$exists': True}}).count() > 0:
+        return
 
     rev_cnt = []
     while len(rev_cnt) == 0:
@@ -270,10 +305,13 @@ def scrape_for_num(strain):
         rev_cnt = soup.findAll('span', {'class': 'hidden-xs'})
         num_reviews = int(rev_cnt[0].get_text().strip('(').strip(')'))
         time.sleep(2)
-    
+
     print num_reviews, 'total reviews for', strain
     scrapetime = datetime.utcnow().isoformat()
-    coll.insert_one({'review_counts':num_reviews})
+    if coll.find({'review_count': {'$exists': True}}).count() > 0:
+        coll.update_one({'review_count': {'$exists': True}}, {'$push': {'review_count': num_reviews}})
+    else:
+        coll.insert_one({'review_count': [num_reviews]})
     client.close()
 
 def scrape_reviews_parallel(strains, pool_size=None):
@@ -287,7 +325,7 @@ def scrape_reviews_parallel(strains, pool_size=None):
     for i, s in enumerate(strains):
         review_page = BASE_URL + s + '/reviews' # need to have reviews here for edibles pages
         genetics = s.split('/')[1]
-        iterableList.append([review_page, genetics])
+        iterableList.append([s, review_page, genetics])
 
     pool.map(func=scrape_reviews_page_threads_map, iterable=iterableList)
 
@@ -296,7 +334,7 @@ def scrape_reviews_page_threads_map(arglist):
     time.sleep(1.5)
     scrape_reviews_page_threads(*arglist)
 
-def scrape_reviews_page_threads(url, genetics, verbose=True, num_threads=10):
+def scrape_reviews_page_threads(strain, url, genetics, verbose=True, num_threads=10):
     '''
     scrapes reviews page for all reviews
     url is a string for the specified strain homepage
@@ -315,7 +353,12 @@ def scrape_reviews_page_threads(url, genetics, verbose=True, num_threads=10):
     # need to connect to client in each process and thread
     client = MongoClient()
     db = client[DB_NAME]
-    coll = db[url.split('/')[4]]
+
+    if strain == '/Indica/chocolate-kush':
+        coll = db['chocolate-kush-indica']
+    else:
+        coll = db[strain.split('/')[-1]]
+
     reviews_block = []
     while len(reviews_block) == 0:
         res = requests.get(url, cookies=cooks)
@@ -328,15 +371,18 @@ def scrape_reviews_page_threads(url, genetics, verbose=True, num_threads=10):
     pages = num_reviews / 8
     scrapetime = datetime.utcnow().isoformat()
     threads = []
-    if coll.find({'genetics': genetics}).count() < 1:
+    if coll.find({'genetics': genetics}).count() == 0:
         coll.insert_one({'genetics': genetics})
-    if coll.find({'scrape_times': {'$exists':True}}).count() < 1:
+    if coll.find({'scrape_times': {'$exists': True}}).count() == 0:
         coll.insert_one({'scrape_times': [scrapetime]})
-        coll.insert_one({'review_count': [num_reviews]})
     else:
         coll.update_one({'scrape_times': {'$exists': True}}, {'$push': {'scrape_times': scrapetime}})
+    if coll.find({'review_count': {'$exists': True}}).count() == 0:
+        coll.insert_one({'review_count': [num_reviews]})
+    else:
         coll.update_one({'review_count': {'$exists': True}}, {'$push': {'review_count': num_reviews}})
-        if coll.find({'review_count':{'$exists':'true'}}).next()['review_count'][-1] == num_reviews:
+        rev_cnt = coll.find({'review_count': {'$exists':True}})[0]['review_count'][-1] + 1 # correct for leafly miscounting
+        if rev_cnt == num_reviews:
             print 'already up-to-date'
             return
 
@@ -396,7 +442,10 @@ def scrape_a_review_page(url, verbose=True):
     client = MongoClient()
     db = client[DB_NAME]
     strain = url.split('/')[4]
-    coll = db[url.split('/')[4]]
+    if strain == '/Indica/chocolate-kush':
+        coll = db['chocolate-kush-indica']
+    else:
+        coll = db[strain.split('/')[-1]]
 
     # for keeping track of how many pages didn't load properly
     coll2 = db['scraped_review_pages']
@@ -504,7 +553,7 @@ def scrape_remainder(strains):
     scrape_reviews_parallel(needs_update)
 
 def get_strains_left_to_scrape(strains):
-    scraped = set(dbfunc.get_list_of_scraped())
+    scraped = set(dbfunc.get_list_of_scraped(DB_NAME))
     strains = np.array(strains)
     strains_abbrev = [s.split('/')[-1] for s in strains]
     mask = []
@@ -523,7 +572,7 @@ if __name__ == "__main__":
     # base_url = 'https://weedmaps.com/'
     # url = base_url + 'dispensaries/in/united-states/colorado/denver-downtown'
     strains = load_strain_list()
-    # strains_left = range(10)
+    # strains_left = get_strains_left_to_scrape(strains)
     # chunk_size = 10 # scrape 10 strains at a time so as not to overload anything
     # while len(strains_left) > 0:
     #     print 'trying again'
