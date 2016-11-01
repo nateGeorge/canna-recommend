@@ -31,6 +31,23 @@ def count_reviews():
 
     client.close()
 
+def get_list_of_scraped():
+    '''
+    returns list of strains that have been scraped
+    '''
+    client = MongoClient()
+    db = client[DB_NAME]
+    scraped = []
+    coll_skips = set(['system.indexes', 'review_counts'])
+    for c in db.collection_names():
+        if c in coll_skips:
+            continue
+        print c
+        scraped.append(c)
+
+    client.close()
+    return scraped
+
 def count_strains():
     '''
     counts number of strains in db with reviews
