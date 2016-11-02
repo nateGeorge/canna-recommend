@@ -63,12 +63,12 @@ def clear_prompts():
             except:
                 pass
 
-driver = setup_driver()
-clear_prompts()
-cookies = driver.get_cookies() # for storing cookies after clicking verification buttons
-cooks = {}
-for c in cookies:
-    cooks[c['name']] = c['value'] # map it to be usable for requests
+def load_current_strains():
+    '''
+    loads most recently pickled strains list
+    '''
+    newest = max(iglob('strain_pages_list*.pk'), key=os.path.getctime)
+    return pk.load(open(newest))
 
 def load_strain_list():
     '''
@@ -573,6 +573,14 @@ def get_strains_left_to_scrape(strains):
     return strains_left
 
 if __name__ == "__main__":
+
+    driver = setup_driver()
+    clear_prompts()
+    cookies = driver.get_cookies() # for storing cookies after clicking verification buttons
+    cooks = {}
+    for c in cookies:
+        cooks[c['name']] = c['value'] # map it to be usable for requests
+
     # another site to scrape:
     # base_url = 'https://weedmaps.com/'
     # url = base_url + 'dispensaries/in/united-states/colorado/denver-downtown'
