@@ -338,3 +338,29 @@ def check_for_metadata(dbname=DB_NAME):
         df.rev_cnt.sum(), 'with review_count'
 
     return df
+
+def count_prods_with_no_revs(dbname=DB_NAME):
+    '''
+    counts number of products with no reviews, prints to console the number
+    of products with and without reviews
+    '''
+    client = MongoClient()
+    db = client[dbname]
+    coll_skips = set(['system.indexes', 'review_counts', 'scraped_review_pages'])
+    #
+    has_reviews = 0
+    no_reviews = 0
+    for c in db.collection_names():
+        if c in coll_skips:
+            continue
+        everything = db[c].find({"scrape_times":{"$exists":False},
+                               "review_count":{"$exists":False},
+                               "genetics":{"$exists":False}
+                               })
+        if len(everything) != 0:
+            has_reviews += 1
+        else:
+            no_reviews += 1
+
+    print 'number of products with reviews:', has_reviews
+    print 'number of products withOUT reviews:', no_reviews
