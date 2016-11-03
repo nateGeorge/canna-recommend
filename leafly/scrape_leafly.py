@@ -79,7 +79,7 @@ def load_current_strains(correct_names=False):
             if s.split('/')[2] in product_renames:
                 temp = s.split('/')
                 temp[2] = product_renames[temp[2]]
-                strains[i] = temp
+                strains[i] = '/'.join(temp)
 
     return strains
 

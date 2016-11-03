@@ -16,7 +16,7 @@ def clean_reviews_func(df):
 
     returns dataframe with cleaned reviews
     '''
-    df['review'] = df['review'].apply(lambda x: re.sub('[A-Za-z0-9]+\.\.\.', '', x))
+    df['review'] = df['review'].apply(lambda x: re.sub('[A-Za-z0-9]*\.\.\.', '', x))
     return df
 
 def load_data(fix_names=True, clean_reviews=True):
