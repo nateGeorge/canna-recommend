@@ -1,18 +1,20 @@
 import graphlab as gl
-import explore_leafly_data as eld
 import data_preprocess as dp
+from graphlab.toolkits.cross_validation import KFold
+from graphlab.toolkits.model_parameter_search import grid_search
+import nlp_funcs as nl
+from collections import Counter
 
+def basic_fr(train, test):
+    '''
+    trains a default factorization_recommender on a train set and scores on
+    test set
 
-
-if __name__ == "__main__":
-
-    df = eld.load_data()
-    # drop everything but user, product, rating
-    df.drop(['date', 'time', 'review'], axis=1, inplace=True)
-
-    # basic rec engine first try
-    train, test = dp.make_tt_split(df)
-
+    args:
+    train and test dataframes
+    returns:
+    graphlab recommendation engine
+    '''
     test_og = test.copy()
 
     ratings = gl.SFrame(train)
@@ -28,14 +30,17 @@ if __name__ == "__main__":
     test.rating = rec_engine.predict(testsl)
     test.to_csv('test_predictions.csv', index=False, encoding='utf-8')
 
-    users, products = df.get_users_and_products(df)
-
     print 'raw mse score:', dp.score_model_mse(test_og.rating, test.rating)
 
-    # optimize num_factors with gridsearch
-    from graphlab.toolkits.cross_validation import KFold
-    from graphlab.toolkits.model_parameter_search import grid_search
+    return rec_engine
 
+def gridsearch_big_step(df):
+    '''
+    gridsearches num_factors for the factorization_recommender in larger steps
+    args: dataframe, df
+
+    returns: gridsearch object
+    '''
     data = gl.SFrame(df)
     kfolds = KFold(data, 3)
     params = dict([('user_id', 'user'),
@@ -45,6 +50,10 @@ if __name__ == "__main__":
                     ('num_factors', [2, 3, 4, 5, 6, 10, 20, 32])])
     grid = grid_search.create(kfolds, gl.factorization_recommender.create, params)
     grid.get_results()
+
+    return grid
+
+    # results:
 
     '''
         +---------+-------------+--------+--------+---------+--------------+
@@ -101,14 +110,54 @@ if __name__ == "__main__":
     looks like 20 features is a decent number.  need to gridsearch more later in the range 10-30
     '''
 
+def gridsearch_10_20(df):
+    '''
+    gridsearches num_factors for the factorization_recommender in range 20-30
+    args: dataframe, df
+
+    returns: gridsearch object
+    '''
+    data = gl.SFrame(df)
+    kfolds = KFold(data, 3)
+    params = dict([('user_id', 'user'),
+                    ('item_id', 'product'),
+                    ('target', 'rating'),
+                    ('solver', 'auto'),
+                    ('num_factors', range(20, 31))])
+    grid = grid_search.create(kfolds, gl.factorization_recommender.create, params)
+    grid.get_results()
+
+    return grid
+
+
+if __name__ == "__main__":
+
+    df = dp.load_data()
+    # drop everything but user, product, rating
+    df.drop(['date', 'time', 'review'], axis=1, inplace=True)
+    # remove user 'Anonymous' -- necessary to match up size of products from
+    # data_preprocess get users and products func
+    df_no_anon = df[df['user'] != 'Anonymous']
+
+    # basic rec engine first try
+    train, test = dp.make_tt_split(df)
+
+    # trains and scores a basic factorization_recommender
+    #basic_fr(train, test)
+
+    # gridsearches over larger steps
+    #gridsearch_big_step(df)
+
     # fit a model to the full review set to get latent feature groups
 
-    rec_engine = gl.factorization_recommender.create(observation_data=ratings,
+    data = gl.SFrame(df)
+    num_factors = 20
+    rec_engine = gl.factorization_recommender.create(observation_data=data,
                                                      user_id="user",
                                                      item_id="product",
                                                      target='rating',
                                                      solver='auto',
-                                                     num_factors=20
+                                                     num_factors=num_factors
                                                      )
 
     # assign groups to users and products based on highest coefficient in the matrices
@@ -121,4 +170,58 @@ if __name__ == "__main__":
     user_groups = U1.argmax(axis=1)
     prod_groups = U2.argmax(axis=1)
 
-    prod_group_0_df = df[prod_groups == 0]
+    users, products = dp.get_users_and_products(df)
+
+    full_df = dp.load_data()
+    prod_group_dict = {}
+    prod_group_dfs = {}
+    for i in range(num_factors):
+        # this gets the product names in each group
+        prod_list = products[prod_groups == i].index
+        prod_group_dict[i] = prod_list
+        prod_list = set(prod_list)
+        # this will get dataframes from the main df with products in each group
+        prod_group_dfs[i] = full_df[full_df['product'].isin(prod_list)]
+
+    import nlp_funcs as nl
+    top_words = {}
+    top_words_set = set()
+    word_list = []
+    for i in range(num_factors):
+        words = nl.get_top_words(prod_group_dfs[i])
+        top_words_set = top_words_set | set(words)
+        top_words[i] = words
+        word_list.extend(words)
+
+    word_counter = Counter(word_list)
+
+    # try bigrams
+    import nlp_funcs as nl
+    top_words = {}
+    top_words_set = set()
+    word_list = []
+    for i in range(num_factors):
+        words = nl.get_top_bigrams(prod_group_dfs[i])
+        top_words_set = top_words_set | set(words)
+        top_words[i] = words
+        word_list.extend(words)
+
+    word_counter = Counter(word_list)
+
+    # get strain list so we can exclude it from bigrams
+    import scrape_leafly as sl
+    strains = sl.load_current_strains(correct_names=True)
+    strains_split = [s.split('/') for s in strains]
+    strain_info = [(s[1].lower(), s[2].lower(), re.sub('-', ' ', s[2].lower())) for s in strains_split]
+    # maps strain to category (hybrid, indica, sativa, edible) in each group
+    strain_cat_dict = {}
+    for s in strain_info:
+        strain_cat_dict[s[1]] = s[0]
+
+    # get % of each type (hybrid, indica, sativa, edible) in each group
+    for p in prod_group_dfs:
+        temp_df = prod_group_dfs[p]
+        temp_df['category'] = temp_df['product'].map(lambda x: strain_cat_dict[x])
+        prod_group_dfs[p] = temp_df
+
+    print top_words_set # without any stopwords: [u'good', u'pain', u'taste', u'high', u'strain', u'love', u'best', u'really', u'great', u'like', u'favorite', u'smoke', u'time', u'smell', u'nice']
