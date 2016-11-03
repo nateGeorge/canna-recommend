@@ -63,12 +63,25 @@ def clear_prompts():
             except:
                 pass
 
-def load_current_strains():
+def load_current_strains(correct_names=False):
     '''
     loads most recently pickled strains list
+
+    args: correct_names -- if True, will map weird coded names to strain names
     '''
     newest = max(iglob('strain_pages_list*.pk'), key=os.path.getctime)
-    return pk.load(open(newest))
+    strains = pk.load(open(newest))
+    if correct_names:
+        product_renames =  {'0bf3f759-186e-4dad-89d0-e0fc7598ac53':'berry-white',
+                        '29aca226-23ba-4726-a4ab-f3bf68f2a3c4':'dynamite',
+                        'c42aa00a-595a-4e58-a7af-0f8ab998073a':'kaboom'}
+        for i, s in enumerate(strains):
+            if s.split('/')[2] in product_renames:
+                temp = s.split('/')
+                temp[2] = product_renames[temp[2]]
+                strains[i] = temp
+
+    return strains
 
 def load_strain_list():
     '''
