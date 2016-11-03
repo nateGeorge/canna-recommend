@@ -4,6 +4,7 @@ from graphlab.toolkits.cross_validation import KFold
 from graphlab.toolkits.model_parameter_search import grid_search
 import nlp_funcs as nl
 from collections import Counter
+import pandas as pd
 
 def basic_fr(train, test):
     '''
@@ -195,6 +196,19 @@ if __name__ == "__main__":
 
     word_counter = Counter(word_list)
 
+    # try lemmatization
+    import nlp_funcs as nl
+    top_words = {}
+    top_words_set = set()
+    word_list = []
+    for i in range(num_factors):
+        words = nl.get_top_words_lemmatize(prod_group_dfs[i], 50)
+        top_words_set = top_words_set | set(words)
+        top_words[i] = words
+        word_list.extend(words)
+
+    word_counter = Counter(word_list)
+
     # try bigrams
     import nlp_funcs as nl
     top_words = {}
@@ -219,9 +233,21 @@ if __name__ == "__main__":
         strain_cat_dict[s[1]] = s[0]
 
     # get % of each type (hybrid, indica, sativa, edible) in each group
+    prod_group_pcts = {}
     for p in prod_group_dfs:
         temp_df = prod_group_dfs[p]
         temp_df['category'] = temp_df['product'].map(lambda x: strain_cat_dict[x])
         prod_group_dfs[p] = temp_df
+        cat_val_counts_p = prod_group_dfs[p]['category'].value_counts()
+        prod_group_pcts[p] = [round(float(c)/prod_group_dfs[p].shape[0]*100, 2) for c in cat_val_counts_p]
+        prod_group_pcts[p] = pd.Series(data=prod_group_pcts[p], index=cat_val_counts_p.index)
+
+
+    # get % of each type overall
+    full_df['category'] = full_df['product'].map(lambda x: strain_cat_dict[x])
+    cat_val_counts = full_df['category'].value_counts()
+    print cat_val_counts
+    cat_val_pct = [round(float(c)/full_df.shape[0]*100, 2) for c in cat_val_counts]
+    cat_val_pct = pd.Series(data=cat_val_pct, index=cat_val_counts.index)
 
     print top_words_set # without any stopwords: [u'good', u'pain', u'taste', u'high', u'strain', u'love', u'best', u'really', u'great', u'like', u'favorite', u'smoke', u'time', u'smell', u'nice']
