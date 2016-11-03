@@ -357,7 +357,7 @@ def count_prods_with_no_revs(dbname=DB_NAME):
                                "review_count":{"$exists":False},
                                "genetics":{"$exists":False}
                                })
-        if len(everything) != 0:
+        if len(list(everything)) != 0:
             has_reviews += 1
         else:
             no_reviews += 1
