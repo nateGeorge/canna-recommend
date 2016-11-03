@@ -28,9 +28,9 @@ def load_data(fix_names=True, clean_reviews=True):
     db = client[DB_NAME]
     total = 0
 
-    product_renames =  {'0bf3f759-186e-4dad-89d0-e0fc7598ac53':'Berry White',
-                    '29aca226-23ba-4726-a4ab-f3bf68f2a3c4':'Dynamite',
-                    'c42aa00a-595a-4e58-a7af-0f8ab998073a':'Kaboom'}
+    product_renames =  {'0bf3f759-186e-4dad-89d0-e0fc7598ac53':'berry-white',
+                    '29aca226-23ba-4726-a4ab-f3bf68f2a3c4':'dynamite',
+                    'c42aa00a-595a-4e58-a7af-0f8ab998073a':'kaboom'}
     coll_skips = set(['system.indexes', 'review_counts', 'scraped_review_pages'])
     products = []
     ratings = []
