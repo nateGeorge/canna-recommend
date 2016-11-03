@@ -30,7 +30,7 @@ function upload(data) {
 function drawBoxes() {
 
     if (json === undefined) return;
-    
+
     var data = JSON.parse(json);
     if (!data.success || data.faces.length === 0) {
         alert('No faces found');
@@ -120,5 +120,13 @@ $('#camera').click(function () {
     $('#landing').fadeOut(function () {
         // Take a picture
         takePhoto();
+    });
+});
+
+$('#recommend').click(function () {
+    // Hide welcome page
+    $('#landing').fadeOut(function () {
+        // make recommendation
+        //takePhoto();
     });
 });

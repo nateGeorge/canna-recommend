@@ -123,10 +123,20 @@ $('#camera').click(function () {
     });
 });
 
+// load words for making recommendation when that section has loaded
+$(words).ready(function () {
+  console.log('cheese');
+});
+
+
+function recommend() {
+
+}
+
 $('#recommend').click(function () {
     // Hide welcome page
     $('#landing').fadeOut(function () {
         // make recommendation
-        //takePhoto();
+        recommend();
     });
 });
