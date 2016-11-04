@@ -188,11 +188,52 @@ def get_top_bigrams(df, num_words=10):
     sort_idxs = np.array(np.argsort(avg_vects))[::-1]
     return vect_words[sort_idxs][:10]
 
-def words_choices():
+def get_word_choices():
     '''
     returns list of words that can be used as choices in initialization function
     for recommendations for someone without any reviews
+
+    gets words for different categories (keys of a dict) that users can choose
+    to have a strain recommended to them
     '''
     # couch lock was in every document with bigrams, so was 'long lasting' with max_df=0.75
-    'wake bake', 'body buzz', 'couch lock', 'clear headed', 'fruity pebbles', 'juicy fruit', 'long lasting'
-    pass
+    word_dict = {}
+    word_dict['feelings'] = ['uplifting',
+                                'mellow',
+                                'euphoric',
+                                'euphoria',
+                                'energy',
+                                'energetic',
+                                'relief',
+                                'clear headed']
+    word_dict['taste'] = ['potent',
+                            'pineapple',
+                            'orange',
+                            'lemon',
+                            'earthy',
+                            'diesel',
+                            'blackberry',
+                            'blueberry',
+                            'cherry',
+                            'banana',
+                            'fruity pebbles',
+                            'juicy fruit']
+    word_dict['conditions'] = ['insomnia',
+                            'stress',
+                            'headache',
+                            'depression',
+                            'anxiety']
+    word_dict['effects'] = ['body',
+                            'couch',
+                            'mellow',
+                            'focus',
+                            'focused',
+                            'cerebral',
+                            'body buzz',
+                            'couch lock',
+                            'long lasting']
+    word_dict['times'] = ['daytime',
+                            'night',
+                            'wake bake']
+
+    return word_dict

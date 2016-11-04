@@ -124,16 +124,16 @@ def get_top_ngrams(prod_group_dfs, num_words=50, ngram_range=(2, 2)):
     word_counter = Counter(word_list)
     return top_words, word_counter
 
-def save_engine(rec_engine, filename='20groupsrec_engine.model'):
+def save_engine(rec_engine, filename='leafly/20groupsrec_engine.model'):
     '''
     saves recommendation engine for later use
     '''
     rec_engine.save(filename)
 
-def load_engine(filename='20groupsrec_engine.model'):
+def load_engine(filename='leafly/20groupsrec_engine.model'):
     return gl.load_model(filename)
 
-def pickle_top_words(top_words, filename='top_words.pk'):
+def pickle_top_words(top_words, filename='leafly/top_words.pk'):
     '''
     pickles to disk the top_words dictionary for product latent groups
 
