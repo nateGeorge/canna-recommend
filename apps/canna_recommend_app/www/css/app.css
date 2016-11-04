@@ -67,3 +67,7 @@ div.container {
     max-width: 800px;
     margin: auto;
 }
+
+.words_title {
+  color: green;
+}

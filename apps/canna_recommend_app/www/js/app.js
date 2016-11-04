@@ -1,4 +1,4 @@
-
+var post_main_addr = 'http://localhost:8080'; // address with flask api
 var json;
 
 // Upload photo
@@ -143,49 +143,54 @@ function getRandomFromBucket() {
 }
 
 var bucket;
-function getRandomWord(wordlist, n=3) {
-  // takes in a list of words and returns n random words
+function getRandomElements(lest, n=3) {
+  // takes in a list and returns n random elements
   // without replacement
   bucket = [];
-  var returnwords = [];
+  var returnlest = [];
 
-  for (var i=0; i<=wordlist.length; i++) {
+  for (var i=0; i<=lest.length - 1; i++) {
       bucket.push(i);
   }
 
   for (var i=0; i<=n; i++) {
-      returnwords.push(wordlist[getRandomFromBucket()]);
+      returnlest.push(lest[getRandomFromBucket()]);
   }
 
-  return returnwords;
+  return returnlest;
 
 }
 
 // load words for making recommendation when that section has loaded
 var words, rows, categories, rand;
 $(words).ready(function () {
-  $.post('http://localhost:8080/get_words', function (data, err) {
+  $.post(post_main_addr + '/get_product_words', function (data, err) {
     words = $.parseJSON(data);
     categories = Object.keys(words);
     var num_cats = categories.length;
+    setWords();
+  });
+});
+
+function setWords() {
+  // sets words in the list groups
+    cats = getRandomElements(categories, $('.list-group').length);
     $('.list-group').each(function(i, v) {
       // first choose a category to pull words from
       // http://stackoverflow.com/questions/9071573/is-there-a-simple-way-to-make-a-random-selection-from-an-array-in-javascript-or
-      rand = Math.random();
-      rand *= num_cats;
-      rand = Math.floor(rand);
+      // rand = Math.random();
+      // rand *= num_cats;
+      // rand = Math.floor(rand);
+      // console.log(rand);
       rows = $(v).children();
-      console.log(rows);
-      var cur_cat = categories.pop(rand);
-      rows[0].innerHTML = cur_cat;
-      word_samp = getRandomWord(words[cur_cat]);
+      //var cur_cat = categories.pop(rand);
+      rows[0].innerHTML = cats[i];
+      word_samp = getRandomElements(words[cats[i]]);
       rows.slice(1).each(function(i, e) {
         e.innerHTML = word_samp[i];
       });
-
-    });
   });
-});
+}
 
 // when the words are clicked, toggle their active state
 $('.list-group-item').click(function() {
@@ -198,7 +203,7 @@ $('.list-group-item').click(function() {
 
 
 function recommend() {
-
+  $.post(post_main_addr + '/send_words')
 }
 
 $('#recommend').click(function () {
