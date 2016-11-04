@@ -1,4 +1,3 @@
-import explore_leafly_data as eld
 from sklearn.model_selection import train_test_split as tts
 from sklearn.metrics import mean_squared_error as mse
 from pymongo import MongoClient
