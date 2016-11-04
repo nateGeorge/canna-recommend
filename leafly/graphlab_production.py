@@ -240,17 +240,18 @@ def get_recs(rec_engine, words, group_dfs, top_words, prod_user='user'):
 
 if __name__ == "__main__":
     df = load_everything()
-    rec_engine = train_engine(df)
-    save_engine(rec_engine)
-    #rec_engine = load_engine()
+    #rec_engine = train_engine(df)
+    #save_engine(rec_engine)
+    rec_engine = load_engine()
     prod_group_dfs, user_group_dfs = get_latent_feature_groups(rec_engine)
     prod_top_words, prod_word_counter = get_top_words(prod_group_dfs)
     df_prod_top_words = {}
     for p in prod_top_words:
         df_prod_top_words[p] = pd.DataFrame({'word':prod_top_words[p].keys(), 'vector':prod_top_words[p].values()})
 
-    for p in df_prod_top_words:
-        print df_prod_top_words[p]['word'].head()
+    # for checking out the top few words in each group
+    # for p in df_prod_top_words:
+    #     print df_prod_top_words[p]['word'].head()
 
     user_top_words, user_word_counter = get_top_words(user_group_dfs)
 
