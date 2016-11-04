@@ -112,20 +112,23 @@ def gridsearch_big_step(df):
     looks like 20 features is a decent number.  need to gridsearch more later in the range 10-30
     '''
 
-def gridsearch_10_20(df):
+def gridsearch_alot(df):
     '''
-    gridsearches num_factors for the factorization_recommender in range 20-30
+    gridsearches num_factors for the factorization_recommender in range 2-32
     args: dataframe, df
 
     returns: gridsearch object
     '''
     data = gl.SFrame(df)
     kfolds = KFold(data, 3)
+    num_factors_space = list(range(20, 31))
+    num_factors_space.extend([2, 4, 6, 8, 10, 12, 16, 32])
+    num_factors_space = sorted(num_factors_space)
     params = dict([('user_id', 'user'),
                     ('item_id', 'product'),
                     ('target', 'rating'),
                     ('solver', 'auto'),
-                    ('num_factors', range(20, 31))])
+                    ('num_factors', num_factors_space)])
     grid = grid_search.create(kfolds, gl.factorization_recommender.create, params)
     grid.get_results()
 
@@ -137,12 +140,12 @@ if __name__ == "__main__":
     df = dp.load_data()
     # drop everything but user, product, rating
     df.drop(['date', 'time', 'review'], axis=1, inplace=True)
+    grid = gridsearch_alot(df)
     # remove user 'Anonymous' -- necessary to match up size of products from
     # data_preprocess get users and products func
-    df_no_anon = df[df['user'] != 'Anonymous']
 
     # basic rec engine first try
-    train, test = dp.make_tt_split(df)
+    #train, test = dp.make_tt_split(df)
 
     # trains and scores a basic factorization_recommender
     #basic_fr(train, test)
@@ -152,62 +155,61 @@ if __name__ == "__main__":
 
     # fit a model to the full review set to get latent feature groups
 
-    data = gl.SFrame(df)
-    num_factors = 20
-    rec_engine = gl.factorization_recommender.create(observation_data=data,
-                                                     user_id="user",
-                                                     item_id="product",
-                                                     target='rating',
-                                                     solver='auto',
-                                                     num_factors=num_factors
-                                                     )
-
-    # assign groups to users and products based on highest coefficient in the matrices
-    d = rec_engine.get("coefficients")
-    U1 = d['user']
-    U2 = d['product']
-    U1 = U1['factors'].to_numpy()
-    U2 = U2['factors'].to_numpy()
-
-    user_groups = U1.argmax(axis=1)
-    prod_groups = U2.argmax(axis=1)
-
-    users, products = dp.get_users_and_products(df)
-
-    full_df = dp.load_data()
-    prod_group_dict = {}
-    prod_group_dfs = {}
-    for i in range(num_factors):
-        # this gets the product names in each group
-        prod_list = products[prod_groups == i].index
-        prod_group_dict[i] = prod_list
-        prod_list = set(prod_list)
-        # this will get dataframes from the main df with products in each group
-        prod_group_dfs[i] = full_df[full_df['product'].isin(prod_list)]
-
-    top_words = {}
-    top_words_set = set()
-    word_list = []
-    for i in range(num_factors):
-        words = nl.get_top_words(prod_group_dfs[i])
-        top_words_set = top_words_set | set(words)
-        top_words[i] = words
-        word_list.extend(words)
-
-    word_counter = Counter(word_list)
-
-    # try lemmatization
-    import nlp_funcs as nl
-    top_words = {}
-    top_words_set = set()
-    word_list = []
-    for i in range(num_factors):
-        words = nl.get_top_words_lemmatize(prod_group_dfs[i], 50)
-        top_words_set = top_words_set | set(words)
-        top_words[i] = words
-        word_list.extend(words)
-
-    word_counter = Counter(word_list)
+    # data = gl.SFrame(df)
+    # num_factors = 20
+    # rec_engine = gl.factorization_recommender.create(observation_data=data,
+    #                                                  user_id="user",
+    #                                                  item_id="product",
+    #                                                  target='rating',
+    #                                                  solver='auto',
+    #                                                  num_factors=num_factors
+    #                                                  )
+    #
+    # # assign groups to users and products based on highest coefficient in the matrices
+    # d = rec_engine.get("coefficients")
+    # U1 = d['user']
+    # U2 = d['product']
+    # U1 = U1['factors'].to_numpy()
+    # U2 = U2['factors'].to_numpy()
+    #
+    # user_groups = U1.argmax(axis=1)
+    # prod_groups = U2.argmax(axis=1)
+    #
+    # users, products = dp.get_users_and_products(df)
+    #
+    # full_df = dp.load_data()
+    # prod_group_dict = {}
+    # prod_group_dfs = {}
+    # for i in range(num_factors):
+    #     # this gets the product names in each group
+    #     prod_list = products[prod_groups == i].index
+    #     prod_group_dict[i] = prod_list
+    #     prod_list = set(prod_list)
+    #     # this will get dataframes from the main df with products in each group
+    #     prod_group_dfs[i] = full_df[full_df['product'].isin(prod_list)]
+    #
+    # top_words = {}
+    # top_words_set = set()
+    # word_list = []
+    # for i in range(num_factors):
+    #     words = nl.get_top_words(prod_group_dfs[i])
+    #     top_words_set = top_words_set | set(words)
+    #     top_words[i] = words
+    #     word_list.extend(words)
+    #
+    # word_counter = Counter(word_list)
+    #
+    # # try lemmatization
+    # top_words = {}
+    # top_words_set = set()
+    # word_list = []
+    # for i in range(num_factors):
+    #     words = nl.get_top_words_lemmatize(prod_group_dfs[i], 50)
+    #     top_words_set = top_words_set | set(words)
+    #     top_words[i] = words
+    #     word_list.extend(words)
+    #
+    # word_counter = Counter(word_list)
 
     '''
     gave this:
@@ -324,42 +326,42 @@ if __name__ == "__main__":
     '''
 
     # try bigrams
-    top_words = {}
-    top_words_set = set()
-    word_list = []
-    for i in range(num_factors):
-        words = nl.get_top_bigrams(prod_group_dfs[i])
-        top_words_set = top_words_set | set(words)
-        top_words[i] = words
-        word_list.extend(words)
-
-    word_counter = Counter(word_list)
-
-    # get strain list so we can exclude it from bigrams
-    strains = sl.load_current_strains(correct_names=True)
-    strains_split = [s.split('/') for s in strains]
-    strain_info = [(s[1].lower(), s[2].lower(), re.sub('-', ' ', s[2].lower())) for s in strains_split]
-    # maps strain to category (hybrid, indica, sativa, edible) in each group
-    strain_cat_dict = {}
-    for s in strain_info:
-        strain_cat_dict[s[1]] = s[0]
-
-    # get % of each type (hybrid, indica, sativa, edible) in each group
-    prod_group_pcts = {}
-    for p in prod_group_dfs:
-        temp_df = prod_group_dfs[p]
-        temp_df['category'] = temp_df['product'].map(lambda x: strain_cat_dict[x])
-        prod_group_dfs[p] = temp_df
-        cat_val_counts_p = prod_group_dfs[p]['category'].value_counts()
-        prod_group_pcts[p] = [round(float(c)/prod_group_dfs[p].shape[0]*100, 2) for c in cat_val_counts_p]
-        prod_group_pcts[p] = pd.Series(data=prod_group_pcts[p], index=cat_val_counts_p.index)
-
-
-    # get % of each type overall
-    full_df['category'] = full_df['product'].map(lambda x: strain_cat_dict[x])
-    cat_val_counts = full_df['category'].value_counts()
-    print cat_val_counts
-    cat_val_pct = [round(float(c)/full_df.shape[0]*100, 2) for c in cat_val_counts]
-    cat_val_pct = pd.Series(data=cat_val_pct, index=cat_val_counts.index)
-
-    print top_words_set # without any stopwords: [u'good', u'pain', u'taste', u'high', u'strain', u'love', u'best', u'really', u'great', u'like', u'favorite', u'smoke', u'time', u'smell', u'nice']
+    # top_words = {}
+    # top_words_set = set()
+    # word_list = []
+    # for i in range(num_factors):
+    #     words = nl.get_top_bigrams(prod_group_dfs[i])
+    #     top_words_set = top_words_set | set(words)
+    #     top_words[i] = words
+    #     word_list.extend(words)
+    #
+    # word_counter = Counter(word_list)
+    #
+    # # get strain list so we can exclude it from bigrams
+    # strains = sl.load_current_strains(correct_names=True)
+    # strains_split = [s.split('/') for s in strains]
+    # strain_info = [(s[1].lower(), s[2].lower(), re.sub('-', ' ', s[2].lower())) for s in strains_split]
+    # # maps strain to category (hybrid, indica, sativa, edible) in each group
+    # strain_cat_dict = {}
+    # for s in strain_info:
+    #     strain_cat_dict[s[1]] = s[0]
+    #
+    # # get % of each type (hybrid, indica, sativa, edible) in each group
+    # prod_group_pcts = {}
+    # for p in prod_group_dfs:
+    #     temp_df = prod_group_dfs[p]
+    #     temp_df['category'] = temp_df['product'].map(lambda x: strain_cat_dict[x])
+    #     prod_group_dfs[p] = temp_df
+    #     cat_val_counts_p = prod_group_dfs[p]['category'].value_counts()
+    #     prod_group_pcts[p] = [round(float(c)/prod_group_dfs[p].shape[0]*100, 2) for c in cat_val_counts_p]
+    #     prod_group_pcts[p] = pd.Series(data=prod_group_pcts[p], index=cat_val_counts_p.index)
+    #
+    #
+    # # get % of each type overall
+    # full_df['category'] = full_df['product'].map(lambda x: strain_cat_dict[x])
+    # cat_val_counts = full_df['category'].value_counts()
+    # print cat_val_counts
+    # cat_val_pct = [round(float(c)/full_df.shape[0]*100, 2) for c in cat_val_counts]
+    # cat_val_pct = pd.Series(data=cat_val_pct, index=cat_val_counts.index)
+    #
+    # print top_words_set # without any stopwords: [u'good', u'pain', u'taste', u'high', u'strain', u'love', u'best', u'really', u'great', u'like', u'favorite', u'smoke', u'time', u'smell', u'nice']

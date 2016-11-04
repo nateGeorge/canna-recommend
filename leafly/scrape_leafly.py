@@ -16,7 +16,7 @@ import db_functions as dbfunc
 import numpy as np
 
 delay_penalty = 1 # time to wait until starting next thread if can't scrape current one
-ua = UserAgent()
+#ua = UserAgent()
 
 STRAIN_PAGE_FILE = 'leafly_alphabetic_strains_page_' + datetime.utcnow().isoformat()[:10] + '.pk'
 NEW_STRAIN_PAGE_FILE = 'leafly_newest_strains_page_' + datetime.utcnow().isoformat()[:10] + '.pk'

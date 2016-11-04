@@ -8,6 +8,7 @@ import pandas as pd
 import cPickle as pk
 from sklearn.feature_extraction.text import TfidfVectorizer
 import numpy as np
+import collections
 
 def load_everything():
     '''
@@ -244,7 +245,15 @@ if __name__ == "__main__":
     #rec_engine = load_engine()
     prod_group_dfs, user_group_dfs = get_latent_feature_groups(rec_engine)
     prod_top_words, prod_word_counter = get_top_words(prod_group_dfs)
+    df_prod_top_words = {}
+    for p in prod_top_words:
+        df_prod_top_words[p] = pd.DataFrame({'word':prod_top_words[p].keys(), 'vector':prod_top_words[p].values()})
+
+    for p in df_prod_top_words:
+        print df_prod_top_words[p]['word'].head()
+
     user_top_words, user_word_counter = get_top_words(user_group_dfs)
+
 
     test_user_words = ['pleasant', 'lemon', 'morning']
     test_product_words = ['intense', 'fruity', 'fire']
