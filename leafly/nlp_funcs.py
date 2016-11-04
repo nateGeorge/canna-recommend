@@ -6,7 +6,20 @@ from nltk.stem import WordNetLemmatizer
 from nltk.corpus import stopwords
 from sklearn.feature_extraction.stop_words import ENGLISH_STOP_WORDS
 from sklearn.feature_extraction.text import TfidfVectorizer
+
 np.random.seed(42)
+
+def print_fine_pos(token):
+    return (token.tag_)
+
+def pos_tags(sentence):
+    nlp = spacy.load('en')
+    sentence = unicode(sentence, "utf-8")
+    tokens = nlp(sentence)
+    tags = []
+    for tok in tokens:
+        tags.append((tok,print_fine_pos(tok)))
+    return tags
 
 def get_stopwords():
     # words I noticed came up in the first tfidf run, which should be excluded
@@ -45,8 +58,15 @@ def get_stopwords():
     #      u'strawberry': 1,
     #      u'wa': 20})
 
+    ESW4 = ['weed', 'wa', 'well', 'white', 'widow', 'would', 'tasty', 'top', 'stuff', 'super', 'still', 'smooth', 'smoked',
+             'smoking', 'shit', 'sativa', 'right', 'relaxed', 'recommend', 'purple', 'pretty', 'og', 'one', 'perfect',
+             'far', 'feel', 'feeling', 'first', 'flavor', 'long', 'made', 'make', 'mellow', 'much', 'night', 'little', 'kush',
+             'jack', 'indica', 'hybrid', 'hit', 'help', 'heavy', 'headband', 'haze', 'ha', 'gsc', 'green', 'got', 'go', 'give',
+             'get', 'gdp', 'ever', 'always', 'atf', 'awesome', 'beautiful', 'bit', 'bubba', 'bud', 'buzz', 'chemdawg',
+             'crack', 'definitely', 'effect']
 
-    stops = set(list(stopwords.words('english'))) | set(EXTRA_STOP_WORDS) | set(ESW2)
+
+    stops = set(list(stopwords.words('english'))) | set(EXTRA_STOP_WORDS) | set(ESW2) | set(ESW4)
 
     return stops
 
@@ -97,7 +117,7 @@ def get_top_words(df, num_words=10):
     sort_idxs = np.array(np.argsort(avg_vects))[::-1]
     return vect_words[sort_idxs][:10]
 
-def get_top_words_lemmatize(df, num_words=10):
+def get_top_words_lemmatize(df, num_words=10, ngram_range=(1, 1)):
     '''
     gets top words from tfidf vectorization of reviews in dataframe df
     lemmatizes using
@@ -114,7 +134,7 @@ def get_top_words_lemmatize(df, num_words=10):
     reviews = df['review'].map(lambda x: ' '.join([lemmatizer.lemmatize(w) for w in x.split()])).values
     reviews = [s.encode('ascii', errors='ignore') for s in reviews]
 
-    tfvect = TfidfVectorizer(stop_words=stops, max_df=0.75, min_df=5)
+    tfvect = TfidfVectorizer(stop_words=stops, max_df=0.75, min_df=5, ngram_range=ngram_range)
     review_vects = tfvect.fit_transform(reviews)
     vect_words = np.array(tfvect.get_feature_names())
     review_vects = review_vects.toarray()

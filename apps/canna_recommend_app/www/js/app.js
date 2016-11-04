@@ -123,9 +123,77 @@ $('#camera').click(function () {
     });
 });
 
+// http://stackoverflow.com/questions/6630772/javascript-pop-from-object
+var ObjectStack = function(obj) {
+    this.object = obj;
+    this.stack=[];
+};
+
+ObjectStack.prototype.pop = function() {
+    var key = this.stack.pop();
+    var prop = this.object[key];
+    delete this.object[key];
+    return prop;
+};
+
+// http://stackoverflow.com/questions/12987719/javascript-how-to-randomly-sample-items-without-replacement
+function getRandomFromBucket() {
+   var randomIndex = Math.floor(Math.random()*bucket.length);
+   return bucket.splice(randomIndex, 1)[0];
+}
+
+var bucket;
+function getRandomWord(wordlist, n=3) {
+  // takes in a list of words and returns n random words
+  // without replacement
+  bucket = [];
+  var returnwords = [];
+
+  for (var i=0; i<=wordlist.length; i++) {
+      bucket.push(i);
+  }
+
+  for (var i=0; i<=n; i++) {
+      returnwords.push(wordlist[getRandomFromBucket()]);
+  }
+
+  return returnwords;
+
+}
+
 // load words for making recommendation when that section has loaded
+var words, rows, categories, rand;
 $(words).ready(function () {
-  console.log('cheese');
+  $.post('http://localhost:8080/get_words', function (data, err) {
+    words = $.parseJSON(data);
+    categories = Object.keys(words);
+    var num_cats = categories.length;
+    $('.list-group').each(function(i, v) {
+      // first choose a category to pull words from
+      // http://stackoverflow.com/questions/9071573/is-there-a-simple-way-to-make-a-random-selection-from-an-array-in-javascript-or
+      rand = Math.random();
+      rand *= num_cats;
+      rand = Math.floor(rand);
+      rows = $(v).children();
+      console.log(rows);
+      var cur_cat = categories.pop(rand);
+      rows[0].innerHTML = cur_cat;
+      word_samp = getRandomWord(words[cur_cat]);
+      rows.slice(1).each(function(i, e) {
+        e.innerHTML = word_samp[i];
+      });
+
+    });
+  });
+});
+
+// when the words are clicked, toggle their active state
+$('.list-group-item').click(function() {
+    if ($(this).hasClass('active')) {
+      $(this).removeClass("active");
+    } else {
+      $(this).addClass("active");
+    }
 });
 
 

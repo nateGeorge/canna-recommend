@@ -5,6 +5,7 @@ from graphlab.toolkits.model_parameter_search import grid_search
 import nlp_funcs as nl
 from collections import Counter
 import pandas as pd
+import scrape_leafly as sl
 
 def basic_fr(train, test):
     '''
@@ -184,7 +185,6 @@ if __name__ == "__main__":
         # this will get dataframes from the main df with products in each group
         prod_group_dfs[i] = full_df[full_df['product'].isin(prod_list)]
 
-    import nlp_funcs as nl
     top_words = {}
     top_words_set = set()
     word_list = []
@@ -209,8 +209,121 @@ if __name__ == "__main__":
 
     word_counter = Counter(word_list)
 
+    '''
+    gave this:
+
+    ({u'also': 19,
+         u'always': 1,
+         u'anxiety': 20,
+         u'atf': 1,
+         u'awesome': 19,
+         u'back': 2,
+         u'beautiful': 1,
+         u'bit': 1,
+         u'blackberry': 1,
+         u'blueberry': 1,
+         u'body': 20,
+         u'bubba': 1,
+         u'bud': 20,
+         u'buzz': 19,
+         u'cheese': 2,
+         u'chemdawg': 1,
+         u'couch': 10,
+         u'crack': 1,
+         u'day': 20,
+         u'definitely': 20,
+         u'diesel': 1,
+         u'earthy': 2,
+         u'effect': 20,
+         u'energetic': 3,
+         u'energy': 1,
+         u'euphoric': 13,
+         u'ever': 20,
+         u'far': 1,
+         u'feel': 20,
+         u'feeling': 20,
+         u'felt': 14,
+         u'first': 20,
+         u'flavor': 20,
+         u'fruity': 1,
+         u'gdp': 1,
+         u'get': 20,
+         u'give': 18,
+         u'go': 19,
+         u'got': 20,
+         u'green': 1,
+         u'gsc': 1,
+         u'ha': 20,
+         u'haze': 2,
+         u'headband': 1,
+         u'heavy': 14,
+         u'help': 7,
+         u'hit': 20,
+         u'hybrid': 1,
+         u'indica': 20,
+         u'insomnia': 1,
+         u'jack': 1,
+         u'kush': 8,
+         u'lemon': 4,
+         u'little': 19,
+         u'long': 20,
+         u'made': 19,
+         u'make': 20,
+         u'mellow': 14,
+         u'much': 20,
+         u'night': 15,
+         u'og': 3,
+         u'one': 20,
+         u'orange': 1,
+         u'perfect': 20,
+         u'pineapple': 1,
+         u'potent': 8,
+         u'pretty': 20,
+         u'purple': 2,
+         u'recommend': 20,
+         u'relaxed': 20,
+         u'relief': 5,
+         u'right': 2,
+         u'sativa': 20,
+         u'shit': 6,
+         u'smoked': 20,
+         u'smoking': 18,
+         u'smooth': 20,
+         u'still': 8,
+         u'stress': 2,
+         u'stuff': 20,
+         u'super': 20,
+         u'tasty': 1,
+         u'top': 5,
+         u'uplifting': 15,
+         u'wa': 20,
+         u'weed': 19,
+         u'well': 20,
+         u'white': 1,
+         u'widow': 1,
+         u'would': 20})
+
+         words to use for feeling:
+         uplifting, mellow, euphoric, euphoria, energy, energetic, relief
+         words to use for taste:
+         potent, pineapple, orange, lemon, earthy, diesel, blackberry, blueberry, cherry, banana
+         words to use for conditions:
+         insomnia, stress, headache, depression, anxiety
+         words to use for effects:
+         body, couch, mellow, focus, focused, cerebral
+         times:
+         daytime, night
+
+         words to include in stoplist:
+         weed, wa, well, white, widow, would, tasty, top, stuff, super, still, smooth, smoked,
+         smoking, shit, sativa, right, relaxed, recommend, purple, pretty, og, one, perfect,
+         far, feel, feeling, first, flavor, long, made, make, mellow, much, night, little, kush,
+         jack, indica, hybrid, hit, help, heavy, headband, haze, ha, gsc, green, got, go, give,
+         get, gdp, ever, always, atf, awesome, beautiful, bit, bubba, bud, buzz, chemdawg,
+         crack, definitely, effect
+    '''
+
     # try bigrams
-    import nlp_funcs as nl
     top_words = {}
     top_words_set = set()
     word_list = []
@@ -223,7 +336,6 @@ if __name__ == "__main__":
     word_counter = Counter(word_list)
 
     # get strain list so we can exclude it from bigrams
-    import scrape_leafly as sl
     strains = sl.load_current_strains(correct_names=True)
     strains_split = [s.split('/') for s in strains]
     strain_info = [(s[1].lower(), s[2].lower(), re.sub('-', ' ', s[2].lower())) for s in strains_split]
