@@ -138,7 +138,7 @@ def gridsearch_alot(df):
 if __name__ == "__main__":
 
     df = dp.load_data()
-    df_small = df.head(1000)
+    df_small = df.head(50)
     # drop everything but user, product, rating
     df_small.drop(['date', 'time', 'review'], axis=1, inplace=True)
     grid = gridsearch_alot(df_small)

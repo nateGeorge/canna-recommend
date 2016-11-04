@@ -235,6 +235,8 @@ def get_recs(rec_engine, words, group_dfs, top_words, prod_user='user'):
         top_idx = np.argmax(sims)
         # for now return the top 20 most reviewed strains in the category
         prods = group_dfs[top_idx]['product'].value_counts()
+        prods = prods[:20]
+
 
 
 
@@ -258,6 +260,8 @@ if __name__ == "__main__":
 
     test_user_words = ['pleasant', 'lemon', 'morning']
     test_product_words = ['intense', 'fruity', 'fire']
+
+    sims = get_prod_similarity(test_product_words, prod_top_words)
 
     #write_top_words([u for i in user_word_counter], 'user_top_words')
     #top_bigrams, bigram_counter = get_top_ngrams(prod_group_dfs)
