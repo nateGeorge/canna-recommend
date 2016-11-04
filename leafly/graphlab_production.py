@@ -6,6 +6,8 @@ import nlp_funcs as nl
 from collections import Counter
 import pandas as pd
 import cPickle as pk
+from sklearn.feature_extraction.text import TfidfVectorizer
+import numpy as np
 
 def load_everything():
     '''
@@ -76,37 +78,54 @@ def get_latent_feature_groups(rec_engine, df=None):
         # this will get dataframes from the main df with products in each group
         prod_group_dfs[i] = df[df['product'].isin(prod_list)]
 
-    return prod_group_dfs
+    user_group_dict = {}
+    user_group_dfs = {}
+    for i in range(U1.shape[1]):
+        # this gets the product names in each group
+        user_list = users[user_groups == i].index
+        user_group_dict[i] = user_list
+        user_list = set(user_list)
+        # this will get dataframes from the main df with products in each group
+        user_group_dfs[i] = df[df['user'].isin(user_list)]
 
-def get_top_words(prod_group_dfs, num_words=50):
+    return prod_group_dfs, user_group_dfs
+
+def get_top_words(group_dfs, num_words=200):
     '''
     gets top words for each product group and returns them in a dictionary
 
     args:
-    prod_group_dfs -- dict of product groups
+    group_dfs -- dict of product or user groups
     num_words -- number of words per product group to return
 
     returns:
-    top_words_
+    top_words -- dict of dicts (numbers ranging in number of groups)
+    with words as keys and tfidf vector values as values
     '''
+    all_review_vects = {}
     top_words = {}
+    top_vects = {}
     top_words_set = set()
     word_list = []
-    for i in range(len(prod_group_dfs.keys())):
-        words = nl.get_top_words_lemmatize(prod_group_dfs[i], num_words)
+    for i in range(len(group_dfs.keys())):
+        words, vects, review_vects = nl.get_top_words_lemmatize(group_dfs[i])#, num_words)
+        all_review_vects[i] = review_vects
         top_words_set = top_words_set | set(words)
-        top_words[i] = words
+        top_words[i] = {}
+        for j, w in enumerate(words):
+            top_words[i][w] = vects[j]
+
         word_list.extend(words)
 
     word_counter = Counter(word_list)
     return top_words, word_counter
 
-def get_top_ngrams(prod_group_dfs, num_words=50, ngram_range=(2, 2)):
+def get_top_ngrams(group_dfs, num_words=200, ngram_range=(2, 2)):
     '''
     gets top words for each product group and returns them in a dictionary
 
     args:
-    prod_group_dfs -- dict of product groups
+    group_dfs -- dict of product or user groups
     num_words -- number of words per product group to return
 
     returns:
@@ -116,7 +135,7 @@ def get_top_ngrams(prod_group_dfs, num_words=50, ngram_range=(2, 2)):
     top_words_set = set()
     word_list = []
     for i in range(len(prod_group_dfs.keys())):
-        words = nl.get_top_words_lemmatize(prod_group_dfs[i], 50, ngram_range=ngram_range)
+        words, vects = nl.get_top_words_lemmatize(group_dfs[i], 50, ngram_range=ngram_range)
         top_words_set = top_words_set | set(words)
         top_words[i] = words
         word_list.extend(words)
@@ -150,10 +169,85 @@ def pickle_top_words(top_words, filename='leafly/top_words.pk'):
         print 'Error pickling:', e
         return 0
 
+def get_rec_based_on_words(words, group='user'):
+    '''
+    gets recommendation of top products for a user or product group based on
+    list of words
+
+    args:
+    words -- list of words to use for recommendation
+    group -- either 'product' or 'user', which group the words are meant to
+    be compared with
+    '''
+
+def write_top_words(words, filename):
+    '''
+    takes list of words and writes to file
+    '''
+    with open(filename, 'w') as f:
+        for w in words:
+            f.writeline('w')
+
+def get_prod_similarity(words, top_words):
+    '''
+    gets tfidf similarity (cosine) of words vectorized into tfidf and prod group
+    words
+
+    args:
+    words -- list of words chosen by user
+    prod_top_words -- dict of words: vector value from get_top_words
+
+    returns:
+    ordered list of products, descending by similarity
+    '''
+    sims = {}
+    for p in top_words:
+        sims[p] = 0
+        for w in words:
+            try: # try to find word in top_words for this group, otherwise skip
+                sims[p] += top_words[p][w]
+            except:
+                pass
+
+    return sims
+
+
+
+def get_recs(rec_engine, words, group_dfs, top_words, prod_user='user'):
+    '''
+    takes in list of words and groups, returns recommended products (strains)
+
+    args:
+    rec_engine: recommendation engine from graphlab
+
+    if prod_user is 'user', group_dfs should be the user group dfs.
+    finds users most similar to words chosen and returns
+    recommendations for them from the rec engine
+
+    if prod_user is 'products', group_dfs should be the product group dfs
+    finds products most similar to those words (with some randomness)
+
+    words -- list of words chosen by user
+    '''
+    if prod_user == 'products':
+        sims = get_prod_similarity(words, top_words)
+        top_idx = np.argmax(sims)
+        # for now return the top 20 most reviewed strains in the category
+        prods = group_dfs[top_idx]['product'].value_counts()
+
+
+
 if __name__ == "__main__":
     df = load_everything()
-    #rec_engine = train_engine(df)
-    rec_engine = load_engine()
-    prod_group_dfs = get_latent_feature_groups(rec_engine)
-    top_words, word_counter = get_top_words(prod_group_dfs, 100)
+    rec_engine = train_engine(df)
+    save_engine(rec_engine)
+    #rec_engine = load_engine()
+    prod_group_dfs, user_group_dfs = get_latent_feature_groups(rec_engine)
+    prod_top_words, prod_word_counter = get_top_words(prod_group_dfs)
+    user_top_words, user_word_counter = get_top_words(user_group_dfs)
+
+    test_user_words = ['pleasant', 'lemon', 'morning']
+    test_product_words = ['intense', 'fruity', 'fire']
+
+    #write_top_words([u for i in user_word_counter], 'user_top_words')
     #top_bigrams, bigram_counter = get_top_ngrams(prod_group_dfs)

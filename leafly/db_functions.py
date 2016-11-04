@@ -115,7 +115,8 @@ def remove_dupes(test=True, dbname=None):
             continue
         cursor = db[c].aggregate(
         [
-            {"$group": {"_id": "$text",
+        # sometimes have the same text but different users...e.g. anonymous and not
+            {"$group": {"_id": {"text": "$text", "user": "$user"},
                         "scrape_times": {"$addToSet": "$scrape_times"},
                         "review_count": {"$addToSet": "$review_count"},
                         "genetics": {"$addToSet": "$genetics"},
@@ -125,9 +126,9 @@ def remove_dupes(test=True, dbname=None):
                         }
             },
             {"$match": {"count": { "$gte": 2 },
-                       "scrape_times":{"$exists":False},
-                       "review_count":{"$exists":False},
-                       "genetics":{"$exists":False}
+                       "$size": {"scrape_times": {"$eq":0}},
+                       "$size": {"review_count": {"$eq":0}},
+                       "$size": {"genetics": {"$eq":0}}
                        }
             }
         ]
@@ -144,19 +145,19 @@ def remove_dupes(test=True, dbname=None):
 
         cursor = db[c].aggregate(
         [
-            {"$group": {"_id": "$text",
+            {"$group": {"_id": {"text": "$text", "user": "$user"},
                         "scrape_times": {"$addToSet": "$scrape_times"},
                         "review_count": {"$addToSet": "$review_count"},
                         "genetics": {"$addToSet": "$genetics"},
                         "unique_ids": {"$addToSet": "$_id"},
-                        "unique_text": {"$addToSet": "$text"},
+                        #"unique_text": {"$addToSet": "$text"},
                         "count": {"$sum": 1}
                         }
             },
             {"$match": {"count": { "$gte": 2 },
-                       "scrape_times":{"$exists":False},
-                       "review_count":{"$exists":False},
-                       "genetics":{"$exists":False}
+                       "$size": {"scrape_times": {"$eq":0}},
+                       "$size": {"review_count": {"$eq":0}},
+                       "$size": {"genetics": {"$eq":0}}
                        }
             }
         ]

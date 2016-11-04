@@ -62,6 +62,8 @@ def load_data(fix_names=True, clean_reviews=True):
     dates = pd.to_datetime(df['date'])
     df['date'] = dates.apply(lambda x: x.date())
     df['time'] = dates.apply(lambda x: x.time())
+    df = df[df['user'] != 'Anonymous']
+    df = df.drop_duplicates()
     return df
 
 def make_tt_split(df):

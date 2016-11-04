@@ -12,9 +12,15 @@ np.random.seed(42)
 def print_fine_pos(token):
     return (token.tag_)
 
+
+
 def pos_tags(sentence):
+    '''
+    args:
+    sentence -- unicode string
+    '''
     nlp = spacy.load('en')
-    sentence = unicode(sentence, "utf-8")
+    #sentence = sentence.encode("utf-8")
     tokens = nlp(sentence)
     tags = []
     for tok in tokens:
@@ -94,7 +100,7 @@ def clean_article(article):
 
     return ' '.join(token for token in tokens if token not in STOPLIST).replace("'s", '')#.translate(PUNCT_DICT)
 
-def get_top_words(df, num_words=10):
+def get_top_words(df, num_words='all'):
     '''
     gets top words from tfidf vectorization of reviews in dataframe df
 
@@ -115,9 +121,12 @@ def get_top_words(df, num_words=10):
     review_vects = review_vects.toarray()
     avg_vects = review_vects.mean(axis=0)
     sort_idxs = np.array(np.argsort(avg_vects))[::-1]
-    return vect_words[sort_idxs][:10]
+    if num_words == 'all':
+        return vect_words[sort_idxs], avg_vects[sort_idxs]
 
-def get_top_words_lemmatize(df, num_words=10, ngram_range=(1, 1)):
+    return vect_words[sort_idxs][:num_words], avg_vects[sort_idxs][:num_words]
+
+def get_top_words_lemmatize(df, num_words='all', ngram_range=(1, 1)):
     '''
     gets top words from tfidf vectorization of reviews in dataframe df
     lemmatizes using
@@ -140,7 +149,12 @@ def get_top_words_lemmatize(df, num_words=10, ngram_range=(1, 1)):
     review_vects = review_vects.toarray()
     avg_vects = review_vects.mean(axis=0)
     sort_idxs = np.array(np.argsort(avg_vects))[::-1]
-    return vect_words[sort_idxs][:num_words]
+
+    if num_words == 'all':
+        return vect_words[sort_idxs], avg_vects[sort_idxs], review_vects
+
+    return vect_words[sort_idxs][:num_words], avg_vects[sort_idxs][:num_words]
+
     ''' for 20 groups, this came up:
     ({u'body': 19,
          u'bud': 20,
@@ -165,13 +179,14 @@ def get_top_words_lemmatize(df, num_words=10, ngram_range=(1, 1)):
          u'wa': 20})
     '''
 
-def get_top_bigrams(df, num_words=10):
+def get_top_bigrams(df, num_words='all'):
     '''
     gets top words from tfidf vectorization of reviews in dataframe df
 
     input:
     df -- dataframe with 'review' column
-    num_words -- number of top words to return (ranked by tfidf)
+    num_words -- number of top words to return (ranked by tfidf), 'all' returns
+    well...all words
 
     output:
     list of top words ranked in order
@@ -186,12 +201,70 @@ def get_top_bigrams(df, num_words=10):
     review_vects = review_vects.toarray()
     avg_vects = review_vects.mean(axis=0)
     sort_idxs = np.array(np.argsort(avg_vects))[::-1]
-    return vect_words[sort_idxs][:10]
+    if num_words == 'all':
+        return vect_words[sort_idxs], avg_vects[sort_idxs]
 
-def get_word_choices():
+    return vect_words[sort_idxs][:num_words], avg_vects[sort_idxs][:num_words]
+
+def get_product_word_choices():
     '''
     returns list of words that can be used as choices in initialization function
     for recommendations for someone without any reviews
+
+    these words were hand-picked from the top tfidf words from the MF product groups
+
+    gets words for different categories (keys of a dict) that users can choose
+    to have a strain recommended to them
+    '''
+    # couch lock was in every document with bigrams, so was 'long lasting' with max_df=0.75
+    word_dict = {}
+    word_dict['feelings'] = ['uplifting',
+                                'mellow',
+                                'euphoric',
+                                'euphoria',
+                                'energy',
+                                'energetic',
+                                'relief',
+                                'clear headed']
+    word_dict['taste'] = ['potent',
+                            'pineapple',
+                            'orange',
+                            'lemon',
+                            'earthy',
+                            'diesel',
+                            'blackberry',
+                            'blueberry',
+                            'cherry',
+                            'banana',
+                            'fruity pebbles',
+                            'juicy fruit']
+    word_dict['conditions'] = ['insomnia',
+                            'stress',
+                            'headache',
+                            'depression',
+                            'anxiety']
+    word_dict['effects'] = ['body',
+                            'couch',
+                            'mellow',
+                            'focus',
+                            'focused',
+                            'cerebral',
+                            'body buzz',
+                            'couch lock',
+                            'long lasting']
+    word_dict['times'] = ['daytime',
+                            'night',
+                            'wake bake']
+
+    return word_dict
+
+
+def get_user_word_choices():
+    '''
+    returns list of words that can be used as choices in initialization function
+    for recommendations for someone without any reviews
+
+    these words were hand-picked from the top tfidf words from the MF user groups
 
     gets words for different categories (keys of a dict) that users can choose
     to have a strain recommended to them

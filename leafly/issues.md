@@ -14,3 +14,13 @@ Another problem was the removing duplicates function.  When aggregating in mongo
 Review counts are not correct: for example,
 https://www.leafly.com/hybrid/hobbit/reviews?page=0
 says 1 review, but there are none.
+
+
+D5:
+Figured out my drop_duplicates mongo function wasn't working.  Think it had something to do with the 
+Need to clean data more.  For some reason, death-star has way more reviews than it should.  Also, there are duplicate reviews that need to be cleaned, e.g.:
+
+40242  Really nice strain, first time i have tried th...      stonedfoxx23   
+40243  Really nice strain, first time i have tried th...         Anonymous
+
+in death-star
