@@ -138,10 +138,9 @@ def gridsearch_alot(df):
 if __name__ == "__main__":
 
     df = dp.load_data()
-    df_small = df.head(50)
     # drop everything but user, product, rating
-    df_small.drop(['date', 'time', 'review'], axis=1, inplace=True)
-    grid = gridsearch_alot(df_small)
+    df.drop(['date', 'time', 'review'], axis=1, inplace=True)
+    grid = gridsearch_alot(df)
     print grid.get_results()
     # remove user 'Anonymous' -- necessary to match up size of products from
     # data_preprocess get users and products func
