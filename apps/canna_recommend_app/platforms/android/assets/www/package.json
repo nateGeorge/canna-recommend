@@ -1,0 +1,31 @@
+{
+  "name": "canna-recommend",
+  "version": "1.0.0",
+  "description": "recommend cannabis products to users",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nateGeorge/canna-recommend.git"
+  },
+  "keywords": [
+    "cannabis",
+    "weed",
+    "marijuana",
+    "recommender",
+    "matrix",
+    "factorization",
+    "tfidf"
+  ],
+  "author": "Nate George",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/nateGeorge/canna-recommend/issues"
+  },
+  "homepage": "https://github.com/nateGeorge/canna-recommend#readme",
+  "dependencies": {
+    "http-server": "^0.9.0"
+  }
+}

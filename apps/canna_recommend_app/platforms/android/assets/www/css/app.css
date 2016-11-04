@@ -11,14 +11,15 @@ html, body {
   min-height: 100%;
   max-height: 100%;
   /* equal to footer height */
-  margin-bottom: -100px; 
+  margin-bottom: -100px;
+  overflow: scroll;
 }
 .page-wrap:after {
   content: "";
   display: block;
 }
 .site-footer, .page-wrap:after {
-  height: 100px; 
+  height: 100px;
 }
 
 /* app styling and animation */
@@ -52,4 +53,21 @@ h3 {
 .box {
     position: absolute;
     border: 5px solid rgba(255, 255, 255, .5);
+}
+
+.fa-circle-o-notch {
+  color: green;
+}
+
+.fa-circle {
+  color: green;
+}
+
+div.container {
+    max-width: 800px;
+    margin: auto;
+}
+
+.words_title {
+  color: green;
 }
