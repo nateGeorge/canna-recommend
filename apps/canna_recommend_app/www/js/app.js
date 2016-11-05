@@ -202,7 +202,7 @@ $('.list-group-item').click(function() {
 });
 
 
-function recommend(words) {
+function recommend(chosen_words) {
   // $.ajax({
   //   url: post_main_addr + '/send_words',
   //   data: JSON.stringify({'words':words}),
@@ -220,8 +220,9 @@ function recommend(words) {
   //   if (err) {console.log(err);}
   //   console.log(data);
   // });
-  $.post(post_main_addr + '/send_words', data={ 'word_list' : words }, function (data, err) {
+  $.post(post_main_addr + '/send_words', data={ word_list : chosen_words }, function (data, err) {
     console.log(data);
+    window.name = JSON.stringify(data);
   });
   // var data = {
   //     screening: '1',
@@ -251,16 +252,19 @@ function recommend(words) {
 
 $('#recommend').click(function () {
     // Hide welcome page
+    var chosen_words = [];
+    $('.list-group-item').each(function(i, v) {
+      if ($(v).hasClass('active')) {
+        var text = v.innerHTML;
+        console.log(text);
+        chosen_words.push(text);
+      }
+    });
+    console.log(chosen_words);
+    recommend(chosen_words);
     $('#landing').fadeOut(function () {
         // make recommendation
-        var words = [];
-        $('.list-group-item').each(function(i, v) {
-          if ($(v).hasClass('active')) {
-            var text = v.innerHTML;
-            console.log(text);
-            words.push(text);
-          }
-        });
-        recommend(words);
+        window.location="recommendations.html";
     });
+
 });

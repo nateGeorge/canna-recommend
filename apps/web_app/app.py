@@ -33,7 +33,7 @@ def send_words():
     print request.json
     print request.mimetype
     print request.values
-    words = request.form['word_list[]']
+    words = request.form.getlist('word_list[]')
     print words
     recs, top3 = glp.get_recs(rec_engine, words, prod_group_dfs, prod_top_words, prod_user='products')
     print top3
@@ -45,4 +45,4 @@ if __name__ == '__main__':
     rec_engine = glp.load_engine()
     prod_group_dfs, user_group_dfs = glp.load_group_dfs()
     prod_top_words, prod_word_counter = glp.load_top_words()
-    app.run(host='0.0.0.0', port=10001, debug=True)
+    app.run(host='0.0.0.0', port=10001, debug=True, threaded=True)
