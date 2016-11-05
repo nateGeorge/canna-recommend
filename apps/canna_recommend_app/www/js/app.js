@@ -1,4 +1,4 @@
-var post_main_addr = 'http://localhost:8080'; // address with flask api
+var post_main_addr = 'http://localhost:10001'; // address with flask api
 var json;
 
 // Upload photo
@@ -195,21 +195,72 @@ function setWords() {
 // when the words are clicked, toggle their active state
 $('.list-group-item').click(function() {
     if ($(this).hasClass('active')) {
-      $(this).removeClass("active");
+      $(this).removeClass('active');
     } else {
-      $(this).addClass("active");
+      $(this).addClass('active');
     }
 });
 
 
-function recommend() {
-  $.post(post_main_addr + '/send_words')
+function recommend(words) {
+  // $.ajax({
+  //   url: post_main_addr + '/send_words',
+  //   data: JSON.stringify({'words':words}),
+  //   type: 'POST',
+  //   contentType: 'application/json',
+  //   dataType: 'json',
+  //   success: function(response) {
+  //       console.log(response);
+  //   },
+  //   error: function(error) {
+  //       console.log(error);
+  //   }
+  // });
+  // $.post(post_main_addr + '/send_words', data={'words':words}, function (data, err) {
+  //   if (err) {console.log(err);}
+  //   console.log(data);
+  // });
+  $.post(post_main_addr + '/send_words', data={ 'word_list' : words }, function (data, err) {
+    console.log(data);
+  });
+  // var data = {
+  //     screening: '1',
+  //     assistance: 'wheelchair access',
+  //     guests: [
+  //         {
+  //             first: 'John',
+  //             last: 'Smith'
+  //         },
+  //         {
+  //             first: 'Dave',
+  //             last: 'Smith'
+  //         }
+  //     ]
+  // };
+  //
+  // $.ajax({
+  //     type: 'POST',
+  //     url: post_main_addr + '/send_words',
+  //     data: JSON.stringify(data),
+  //     dataType: 'json',
+  //     contentType: 'application/json; charset=utf-8'
+  // }).done(function(msg) {
+  //     alert("Data Saved: " + msg);
+  // });
 }
 
 $('#recommend').click(function () {
     // Hide welcome page
     $('#landing').fadeOut(function () {
         // make recommendation
-        recommend();
+        var words = [];
+        $('.list-group-item').each(function(i, v) {
+          if ($(v).hasClass('active')) {
+            var text = v.innerHTML;
+            console.log(text);
+            words.push(text);
+          }
+        });
+        recommend(words);
     });
 });

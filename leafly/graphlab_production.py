@@ -235,10 +235,30 @@ def get_recs(rec_engine, words, group_dfs, top_words, prod_user='user'):
         top_idx = np.argmax(sims)
         # for now return the top 20 most reviewed strains in the category
         prods = group_dfs[top_idx]['product'].value_counts()
-        prods = prods[:20]
+        prods20 = prods[:20].index
+        return prods, np.random.choice(prods20, size=3, replace=False)
 
+def pickle_group_dfs(prod_group_dfs, user_group_dfs, prod_group_dfs_filename='prod_group_dfs.pk', user_group_dfs_filename='user_group_dfs.pk'):
+    pk.dump(prod_group_dfs, open(prod_group_dfs_filename, 'w'), 2)
+    pk.dump(user_group_dfs, open(user_group_dfs_filename, 'w'), 2)
 
+def load_group_dfs(prod_group_dfs_filename='prod_group_dfs.pk', user_group_dfs_filename='user_group_dfs.pk'):
+    prod_group_dfs = pk.load(open(prod_group_dfs_filename))
+    user_group_dfs = pk.load(open(user_group_dfs_filename))
+    return prod_group_dfs, user_group_dfs
 
+def pickle_top_words(prod_top_words,
+                    prod_word_counter,
+                    prod_top_words_filename='prod_top_words.pk',
+                    prod_word_counter_filename='prod_word_counter.pk'):
+    pk.dump(prod_top_words, open(prod_top_words_filename, 'w'), 2)
+    pk.dump(prod_word_counter, open(prod_word_counter_filename, 'w'), 2)
+
+def load_top_words(prod_top_words_filename='prod_top_words.pk',
+                    prod_word_counter_filename='prod_word_counter.pk'):
+    prod_top_words = pk.load(open(prod_top_words_filename))
+    prod_word_counter = pk.load(open(prod_word_counter_filename))
+    return prod_top_words, prod_word_counter
 
 if __name__ == "__main__":
     df = load_everything()
@@ -246,7 +266,9 @@ if __name__ == "__main__":
     #save_engine(rec_engine)
     rec_engine = load_engine()
     prod_group_dfs, user_group_dfs = get_latent_feature_groups(rec_engine)
+    pickle_group_dfs(prod_group_dfs, user_group_dfs)
     prod_top_words, prod_word_counter = get_top_words(prod_group_dfs)
+    pickle_top_words(prod_top_words, prod_word_counter)
     df_prod_top_words = {}
     for p in prod_top_words:
         df_prod_top_words[p] = pd.DataFrame({'word':prod_top_words[p].keys(), 'vector':prod_top_words[p].values()})
@@ -262,6 +284,7 @@ if __name__ == "__main__":
     test_product_words = ['intense', 'fruity', 'fire']
 
     sims = get_prod_similarity(test_product_words, prod_top_words)
+    recs = get_recs(rec_engine, test_product_words, prod_group_dfs, prod_top_words, prod_user='products')
 
     #write_top_words([u for i in user_word_counter], 'user_top_words')
     #top_bigrams, bigram_counter = get_top_ngrams(prod_group_dfs)
