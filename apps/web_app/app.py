@@ -1,3 +1,6 @@
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 import leafly.graphlab_production as glp
 import leafly.nlp_funcs as nl
 import json
