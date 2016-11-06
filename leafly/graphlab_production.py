@@ -9,6 +9,7 @@ import cPickle as pk
 from sklearn.feature_extraction.text import TfidfVectorizer
 import numpy as np
 import collections
+import os
 
 def load_everything():
     '''
