@@ -13,6 +13,13 @@
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/ant-build/classes/com/pyimagesearch/www/R$string.class \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/ant-build/classes/com/pyimagesearch/www/R$xml.class \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/ant-build/classes/com/pyimagesearch/www/R.class \
+/media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/ant-build/classes/me/cannadvise/www/BuildConfig.class \
+/media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/ant-build/classes/me/cannadvise/www/CordovaApp.class \
+/media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/ant-build/classes/me/cannadvise/www/R$attr.class \
+/media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/ant-build/classes/me/cannadvise/www/R$drawable.class \
+/media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/ant-build/classes/me/cannadvise/www/R$string.class \
+/media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/ant-build/classes/me/cannadvise/www/R$xml.class \
+/media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/ant-build/classes/me/cannadvise/www/R.class \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/ant-build/classes/org/apache/cordova/camera/CameraLauncher.class \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/ant-build/classes/org/apache/cordova/camera/ExifHelper.class \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/ant-build/classes/org/apache/cordova/camera/FileHelper.class \

@@ -222,7 +222,7 @@ def get_prod_similarity(words, top_words):
 
 
 
-def get_recs(rec_engine, words, group_dfs, top_words, prod_user='user'):
+def get_recs(rec_engine, words, group_dfs, top_words, prod_user='user', size=3):
     '''
     takes in list of words and groups, returns recommended products (strains)
 
@@ -244,7 +244,7 @@ def get_recs(rec_engine, words, group_dfs, top_words, prod_user='user'):
         # for now return the top 20 most reviewed strains in the category
         prods = group_dfs[top_idx]['product'].value_counts()
         prods20 = prods[:20].index
-        return prods, np.random.choice(prods20, size=3, replace=False)
+        return prods, np.random.choice(prods20, size=size, replace=False)
 
 def pickle_group_dfs(prod_group_dfs, user_group_dfs, prod_group_dfs_filename='prod_group_dfs.pk', user_group_dfs_filename='user_group_dfs.pk'):
     pk.dump(prod_group_dfs, open(prod_group_dfs_filename, 'w'), 2)

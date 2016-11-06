@@ -4,6 +4,7 @@
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/res/drawable-land-ldpi/screen.png \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/res/drawable-land-mdpi/screen.png \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/res/drawable-land-xhdpi/screen.png \
+/media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/res/drawable-mdpi/icon.png \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/res/drawable-port-hdpi/screen.png \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/res/drawable-port-ldpi/screen.png \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/res/drawable-port-mdpi/screen.png \
@@ -15,6 +16,7 @@
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/ant-build/res/drawable-land-ldpi/screen.png \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/ant-build/res/drawable-land-mdpi/screen.png \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/ant-build/res/drawable-land-xhdpi/screen.png \
+/media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/ant-build/res/drawable-mdpi/icon.png \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/ant-build/res/drawable-port-hdpi/screen.png \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/ant-build/res/drawable-port-ldpi/screen.png \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/ant-build/res/drawable-port-mdpi/screen.png \
@@ -43,7 +45,10 @@
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/test.html \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/css/animate.min.css \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/css/app.css \
+/media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/css/bootstrap-theme.min.css \
+/media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/css/bootstrap-theme.min.css.map \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/css/bootstrap.min.css \
+/media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/css/bootstrap.min.css.map \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/css/font-awesome.min.css \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/css/index.css \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/fonts/fontawesome-webfont.eot \

@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<widget id="com.pyimagesearch.www" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:gap="http://phonegap.com/ns/1.0">
+<widget id="me.cannadvise.www" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:gap="http://phonegap.com/ns/1.0">
     <feature name="Camera">
         <param name="android-package" value="org.apache.cordova.camera.CameraLauncher" />
     </feature>
@@ -10,12 +10,12 @@
         <param name="android-package" value="org.apache.cordova.file.FileUtils" />
         <param name="onload" value="true" />
     </feature>
-    <name>PyImageSearch</name>
+    <name>cannAdvise</name>
     <description>
-        Sample application using PyImageSearch cloud services.
+        Get recommendations for types of cannabis.
     </description>
-    <author email="support@pyimagesearch.com" href="http://www.pyimagesearch.com">
-        PyImageSearch Team
+    <author email="wordsforthewise@gmail.com" href="www.ngeorge.us">
+        Nate George
     </author>
     <content src="index.html" />
     <gap:plugin name="org.apache.cordova.battery-status" />

@@ -26,4 +26,6 @@ If you get an error, you may need to up the ulimit: http://stackoverflow.com/que
 Make sure to run all scripts from the main directory of the project (canna-recommend).  E.g. python2 apps/web_app/app.py
 This is due to relative imports in the script, which I standardized by expecting the script to be run from the home dir.
 
-#
+# Phone blues
+
+debugging android from chrome:  visit this address in chrome `chrome://inspect/#devices` (http://stackoverflow.com/questions/32473199/inspect-devices-is-not-shown-in-chrome)

@@ -1,4 +1,4 @@
-var post_main_addr = 'http://localhost:10001'; // address with flask api
+var post_main_addr = 'http://35.161.235.42:10001'; // address with flask api
 var json;
 
 // Upload photo
@@ -171,6 +171,16 @@ $(words).ready(function () {
     setWords();
   });
 });
+
+$('div:jqmData(url="app.html")').live('pageshow', function(){
+  $.post(post_main_addr + '/get_product_words', function (data, err) {
+    words = $.parseJSON(data);
+    categories = Object.keys(words);
+    var num_cats = categories.length;
+    setWords();
+  });
+});
+
 
 function setWords() {
   // sets words in the list groups

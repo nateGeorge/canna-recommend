@@ -8,14 +8,14 @@ import cPickle as pk
 
 from flask import Flask, request
 import flask
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='')
 
 app.debug = True
 
 # home page
 @app.route('/')
 def index():
-    return 'get outta here!'
+    return app.send_static_file('app.html')
 
 # returns list of words in different groups as dict
 @app.route('/get_product_words', methods=['POST'])
@@ -38,7 +38,7 @@ def send_words():
     print request.values
     words = request.form.getlist('word_list[]')
     print words
-    recs, top3 = glp.get_recs(rec_engine, words, prod_group_dfs, prod_top_words, prod_user='products')
+    recs, top3 = glp.get_recs(rec_engine, words, prod_group_dfs, prod_top_words, prod_user='products', size=9)
     print top3
     resp = flask.Response(json.dumps({'recs':top3.tolist()}))
     resp.headers['Access-Control-Allow-Origin'] = '*'
