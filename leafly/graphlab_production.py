@@ -267,31 +267,41 @@ def load_top_words(prod_top_words_filename='prod_top_words.pk',
     prod_word_counter = pk.load(open(prod_word_counter_filename))
     return prod_top_words, prod_word_counter
 
-if __name__ == "__main__":
+def train_and_save_everything():
+    '''
+    trains model and pickles and saves everything for later use
+    use this if deploying on a server etc
+    '''
     df = load_everything()
-    #rec_engine = train_engine(df)
-    #save_engine(rec_engine)
-    rec_engine = load_engine()
+    if os.path.exists('leafly/20groupsrec_engine.model'):
+        rec_engine = load_engine()
+    else:
+        rec_engine = train_engine(df)
+        save_engine(rec_engine)
+
     prod_group_dfs, user_group_dfs = get_latent_feature_groups(rec_engine)
     pickle_group_dfs(prod_group_dfs, user_group_dfs)
     prod_top_words, prod_word_counter = get_top_words(prod_group_dfs)
     pickle_top_words(prod_top_words, prod_word_counter)
-    df_prod_top_words = {}
-    for p in prod_top_words:
-        df_prod_top_words[p] = pd.DataFrame({'word':prod_top_words[p].keys(), 'vector':prod_top_words[p].values()})
+
+if __name__ == "__main__":
+    pass
+    # df_prod_top_words = {}
+    # for p in prod_top_words:
+    #     df_prod_top_words[p] = pd.DataFrame({'word':prod_top_words[p].keys(), 'vector':prod_top_words[p].values()})
 
     # for checking out the top few words in each group
     # for p in df_prod_top_words:
     #     print df_prod_top_words[p]['word'].head()
 
-    user_top_words, user_word_counter = get_top_words(user_group_dfs)
-
-
-    test_user_words = ['pleasant', 'lemon', 'morning']
-    test_product_words = ['intense', 'fruity', 'fire']
-
-    sims = get_prod_similarity(test_product_words, prod_top_words)
-    recs = get_recs(rec_engine, test_product_words, prod_group_dfs, prod_top_words, prod_user='products')
+    # user_top_words, user_word_counter = get_top_words(user_group_dfs)
+    #
+    #
+    # test_user_words = ['pleasant', 'lemon', 'morning']
+    # test_product_words = ['intense', 'fruity', 'fire']
+    #
+    # sims = get_prod_similarity(test_product_words, prod_top_words)
+    # recs = get_recs(rec_engine, test_product_words, prod_group_dfs, prod_top_words, prod_user='products')
 
     #write_top_words([u for i in user_word_counter], 'user_top_words')
     #top_bigrams, bigram_counter = get_top_ngrams(prod_group_dfs)
