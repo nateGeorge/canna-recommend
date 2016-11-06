@@ -67,6 +67,13 @@ def get_latent_feature_groups(rec_engine, df=None):
     user_groups = U1.argmax(axis=1)
     prod_groups = U2.argmax(axis=1)
 
+    pk.dump(U1, open('user_latent_matrix.pk', 'w'), 2)
+    pk.dump(U2, open('product_latent_matrix.pk', 'w'), 2)
+
+    pk.dump(user_groups, open('user_groups.pk', 'w'), 2)
+    pk.dump(prod_groups, open('product_groups.pk', 'w'), 2)
+
+
     users, products = dp.get_users_and_products(df)
 
     prod_group_dict = {}
