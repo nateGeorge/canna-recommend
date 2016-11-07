@@ -39,3 +39,14 @@ Clone the repo, and go to the main directory.  Open up a tmux shell (`tmux new -
 # Phone blues
 
 debugging android from chrome:  visit this address in chrome `chrome://inspect/#devices` (http://stackoverflow.com/questions/32473199/inspect-devices-is-not-shown-in-chrome)
+
+# Cleaning up
+To tidy up the app code, I used [js-beautify](https://github.com/beautify-web/js-beautify).
+`pip install jsbeautifier`
+`js-beautify main2.html --type "html" -o main.html`
+`js-beautify js/app.js --type "js" -o js/app.js`
+`js-beautify css/app.css --type "css" -o css/app.css`
+
+For python scripts I used autopep8: `autopep8 file.py --in-place`
+
+There is a script called `clean_all.py` which can be run to clean all python files and web files.

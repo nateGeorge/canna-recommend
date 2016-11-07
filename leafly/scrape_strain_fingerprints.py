@@ -15,6 +15,7 @@ ua = UserAgent()
 BASE_URL = 'https://www.leafly.com'
 TEST_URL = 'https://www.leafly.com/hybrid/blue-dream'
 
+
 def test_im_download():
     driver = sl.setup_driver()
     driver.get(BASE_URL)
@@ -26,13 +27,13 @@ def test_im_download():
 
     agent = ua.random  # select a random user agent
     headers = {
-                "Connection" : "close",  # another way to cover tracks
-                "User-Agent" : agent
-                }
+        "Connection": "close",  # another way to cover tracks
+        "User-Agent": agent
+    }
 
     res = requests.get(TEST_URL, headers=headers, cookies=cooks)
     soup = bs(res.content)
-    ims = soup.findAll('img', {'class':'l-img-responsive'})
+    ims = soup.findAll('img', {'class': 'l-img-responsive'})
     imurl = None
     for i in ims:
         src = i.get('src')
@@ -44,8 +45,9 @@ def test_im_download():
         # fetch image and save it
         r = requests.get(imurl, headers=headers, cookies=cooks)
         with open('test.png', 'wb') as f:
-                for chunk in r:
-                    f.write(chunk)
+            for chunk in r:
+                f.write(chunk)
+
 
 def get_chem_images(strains):
     '''
@@ -61,13 +63,13 @@ def get_chem_images(strains):
         print 'checking', s
         agent = ua.random  # select a random user agent
         headers = {
-                    "Connection" : "close",  # another way to cover tracks
-                    "User-Agent" : agent
-                    }
+            "Connection": "close",  # another way to cover tracks
+            "User-Agent": agent
+        }
 
         res = requests.get(BASE_URL + s, headers=headers, cookies=cooks)
         soup = bs(res.content)
-        ims = soup.findAll('img', {'class':'l-img-responsive'})
+        ims = soup.findAll('img', {'class': 'l-img-responsive'})
         imurl = None
         for i in ims:
             src = i.get('src')
@@ -80,6 +82,7 @@ def get_chem_images(strains):
 
     return all_imurls
 
+
 def get_one_chem_im(strain_cooks_tuple):
     '''
     checks one strain page for a strain fingerprint image
@@ -91,9 +94,9 @@ def get_one_chem_im(strain_cooks_tuple):
     print 'checking', s
     agent = ua.random  # select a random user agent
     headers = {
-                "Connection" : "close",  # another way to cover tracks
-                "User-Agent" : agent
-                }
+        "Connection": "close",  # another way to cover tracks
+        "User-Agent": agent
+    }
 
     res = requests.get(BASE_URL + s, headers=headers, cookies=cooks)
     if not res.ok:
@@ -104,7 +107,7 @@ def get_one_chem_im(strain_cooks_tuple):
                 break
 
     soup = bs(res.content)
-    ims = soup.findAll('img', {'class':'l-img-responsive'})
+    ims = soup.findAll('img', {'class': 'l-img-responsive'})
     imurl = None
     for i in ims:
         src = i.get('src')
@@ -114,6 +117,7 @@ def get_one_chem_im(strain_cooks_tuple):
 
     return s, imurl, res
 
+
 def multithread_dl_ims(strains, cooks):
     '''
     gets images links for each strain page with multithreading
@@ -122,8 +126,10 @@ def multithread_dl_ims(strains, cooks):
     '''
     pool_size = mp.cpu_count()
     pool = mp.Pool(processes=pool_size)
-    a = pool.map(func=get_one_chem_im, iterable=zip(strains, [cooks] * len(strains)))
+    a = pool.map(func=get_one_chem_im, iterable=zip(
+        strains, [cooks] * len(strains)))
     return [i for i in a if i is not None]
+
 
 def setup_driver():
     driver = sl.setup_driver()
@@ -131,11 +137,13 @@ def setup_driver():
     cooks = sl.clear_prompts(driver)
     return driver, cooks
 
+
 def save_imdict(im_dict):
     '''
     saves dict of strains and links to strain fingerprint image
     '''
     pk.dump(im_dict, open('im_dict.pk', 'w'), 2)
+
 
 def download_images(im_dict):
     '''
@@ -149,20 +157,21 @@ def download_images(im_dict):
     for s in im_dict:
         agent = ua.random  # select a random user agent
         headers = {
-                    "Connection" : "close",  # another way to cover tracks
-                    "User-Agent" : agent
-                    }
+            "Connection": "close",  # another way to cover tracks
+            "User-Agent": agent
+        }
         r = requests.get(im_dict[s], headers=headers, cookies=cooks)
         with open(main_dir + re.sub('/', '_', s) + '.png', 'wb') as f:
-                for chunk in r:
-                    f.write(chunk)
+            for chunk in r:
+                f.write(chunk)
+
 
 def make_im_res_dicts(scraped_urls):
     '''
     takes list of tuples from multiprocessing and breaks into dicts
     '''
     im_dict = {}
-    res_dict = {} # for keeping track of which requests failed
+    res_dict = {}  # for keeping track of which requests failed
     for i in scraped_urls:
         strain = i[0]
         imurl = i[1]
@@ -172,6 +181,7 @@ def make_im_res_dicts(scraped_urls):
         res_dict[strain] = res
 
     return im_dict, res_dict
+
 
 def check_how_many_ok(res_dict):
     '''
@@ -186,7 +196,6 @@ def check_how_many_ok(res_dict):
             not_ok_dict[s] = 1
 
     return ok_dict, not_ok_dict
-
 
 
 driver, cooks = setup_driver()

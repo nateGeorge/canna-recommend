@@ -5,7 +5,8 @@ import pandas as pd
 import numpy as np
 import re
 
-DB_NAME = 'leafly_backup_2016-11-01'#'leafly'
+DB_NAME = 'leafly_backup_2016-11-01'  # 'leafly'
+
 
 def clean_reviews_func(df):
     '''
@@ -15,8 +16,10 @@ def clean_reviews_func(df):
 
     returns dataframe with cleaned reviews
     '''
-    df['review'] = df['review'].apply(lambda x: re.sub('[A-Za-z0-9]*\.\.\.', '', x))
+    df['review'] = df['review'].apply(
+        lambda x: re.sub('[A-Za-z0-9]*\.\.\.', '', x))
     return df
+
 
 def load_data(fix_names=True, clean_reviews=True):
     '''
@@ -27,10 +30,11 @@ def load_data(fix_names=True, clean_reviews=True):
     db = client[DB_NAME]
     total = 0
 
-    product_renames =  {'0bf3f759-186e-4dad-89d0-e0fc7598ac53':'berry-white',
-                    '29aca226-23ba-4726-a4ab-f3bf68f2a3c4':'dynamite',
-                    'c42aa00a-595a-4e58-a7af-0f8ab998073a':'kaboom'}
-    coll_skips = set(['system.indexes', 'review_counts', 'scraped_review_pages'])
+    product_renames = {'0bf3f759-186e-4dad-89d0-e0fc7598ac53': 'berry-white',
+                       '29aca226-23ba-4726-a4ab-f3bf68f2a3c4': 'dynamite',
+                       'c42aa00a-595a-4e58-a7af-0f8ab998073a': 'kaboom'}
+    coll_skips = set(
+        ['system.indexes', 'review_counts', 'scraped_review_pages'])
     products = []
     ratings = []
     reviews = []
@@ -40,10 +44,10 @@ def load_data(fix_names=True, clean_reviews=True):
         if c in coll_skips:
             continue
 
-        everything = db[c].find({"scrape_times":{"$exists":False},
-                               "review_count":{"$exists":False},
-                               "genetics":{"$exists":False}
-                               })
+        everything = db[c].find({"scrape_times": {"$exists": False},
+                                 "review_count": {"$exists": False},
+                                 "genetics": {"$exists": False}
+                                 })
         for e in everything:
             products.append(c)
             ratings.append(float(e['stars']))
@@ -51,7 +55,8 @@ def load_data(fix_names=True, clean_reviews=True):
             dates.append(e['date'])
             users.append(e['user'])
 
-    df = pd.DataFrame({'rating':ratings, 'review':reviews, 'date':dates, 'user':users, 'product':products})
+    df = pd.DataFrame({'rating': ratings, 'review': reviews,
+                       'date': dates, 'user': users, 'product': products})
     if clean_reviews:
         df = clean_reviews_func(df)
     if fix_names:
@@ -65,6 +70,7 @@ def load_data(fix_names=True, clean_reviews=True):
     df = df.drop_duplicates()
     return df
 
+
 def make_tt_split(df):
     '''
     takes a reviews dataframe as input args
@@ -75,8 +81,10 @@ def make_tt_split(df):
 
     return traindf, testdf
 
+
 def score_model_mse(y_true, y_pred):
     return mse(y_true, y_pred)
+
 
 def get_users_and_products(df):
     '''

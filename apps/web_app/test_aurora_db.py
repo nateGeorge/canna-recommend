@@ -1,5 +1,6 @@
 # install mysqldb on ubuntu: https://edwards.sdsu.edu/research/installing-mysqldb-module-for-python-2-7-for-ubuntu-12-04/
-# http://stackoverflow.com/questions/372885/how-do-i-connect-to-a-mysql-database-in-pythonimport MySQLdb
+# http://stackoverflow.com/questions/372885/how-do-i-connect-to-a-mysql-database-in-pythonimport
+# MySQLdb
 import MySQLdb
 import os
 

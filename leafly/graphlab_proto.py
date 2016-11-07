@@ -7,6 +7,7 @@ from collections import Counter
 import pandas as pd
 import scrape_leafly as sl
 
+
 def basic_fr(train, test):
     '''
     trains a default factorization_recommender on a train set and scores on
@@ -26,7 +27,7 @@ def basic_fr(train, test):
                                                      item_id="product",
                                                      target='rating',
                                                      solver='auto',
-                                                     num_factors=32 # 32 by default
+                                                     num_factors=32  # 32 by default
                                                      )
 
     test.rating = rec_engine.predict(testsl)
@@ -35,6 +36,7 @@ def basic_fr(train, test):
     print 'raw mse score:', dp.score_model_mse(test_og.rating, test.rating)
 
     return rec_engine
+
 
 def gridsearch_big_step(df):
     '''
@@ -46,11 +48,12 @@ def gridsearch_big_step(df):
     data = gl.SFrame(df)
     kfolds = KFold(data, 3)
     params = dict([('user_id', 'user'),
-                    ('item_id', 'product'),
-                    ('target', 'rating'),
-                    ('solver', 'auto'),
-                    ('num_factors', [2, 3, 4, 5, 6, 10, 20, 32])])
-    grid = grid_search.create(kfolds, gl.factorization_recommender.create, params)
+                   ('item_id', 'product'),
+                   ('target', 'rating'),
+                   ('solver', 'auto'),
+                   ('num_factors', [2, 3, 4, 5, 6, 10, 20, 32])])
+    grid = grid_search.create(
+        kfolds, gl.factorization_recommender.create, params)
     grid.get_results()
 
     return grid
@@ -112,6 +115,7 @@ def gridsearch_big_step(df):
     looks like 20 features is a decent number.  need to gridsearch more later in the range 10-30
     '''
 
+
 def gridsearch_alot(df):
     '''
     gridsearches num_factors for the factorization_recommender in range 2-32
@@ -125,11 +129,12 @@ def gridsearch_alot(df):
     num_factors_space.extend([2, 4, 6, 8, 10, 12, 16, 32])
     num_factors_space = sorted(num_factors_space)
     params = dict([('user_id', 'user'),
-                    ('item_id', 'product'),
-                    ('target', 'rating'),
-                    ('solver', 'auto'),
-                    ('num_factors', num_factors_space)])
-    grid = grid_search.create(kfolds, gl.factorization_recommender.create, params)
+                   ('item_id', 'product'),
+                   ('target', 'rating'),
+                   ('solver', 'auto'),
+                   ('num_factors', num_factors_space)])
+    grid = grid_search.create(
+        kfolds, gl.factorization_recommender.create, params)
     grid.get_results()
 
     return grid
@@ -141,6 +146,7 @@ if __name__ == "__main__":
     # drop everything but user, product, rating
     df.drop(['date', 'time', 'review'], axis=1, inplace=True)
     grid = gridsearch_alot(df)
+    grid.save('gridsearch_alot.sframe')
     print grid.get_results()
     # remove user 'Anonymous' -- necessary to match up size of products from
     # data_preprocess get users and products func
@@ -152,7 +158,7 @@ if __name__ == "__main__":
     #basic_fr(train, test)
 
     # gridsearches over larger steps
-    #gridsearch_big_step(df)
+    # gridsearch_big_step(df)
 
     # fit a model to the full review set to get latent feature groups
 
@@ -365,4 +371,6 @@ if __name__ == "__main__":
     # cat_val_pct = [round(float(c)/full_df.shape[0]*100, 2) for c in cat_val_counts]
     # cat_val_pct = pd.Series(data=cat_val_pct, index=cat_val_counts.index)
     #
-    # print top_words_set # without any stopwords: [u'good', u'pain', u'taste', u'high', u'strain', u'love', u'best', u'really', u'great', u'like', u'favorite', u'smoke', u'time', u'smell', u'nice']
+    # print top_words_set # without any stopwords: [u'good', u'pain',
+    # u'taste', u'high', u'strain', u'love', u'best', u'really', u'great',
+    # u'like', u'favorite', u'smoke', u'time', u'smell', u'nice']

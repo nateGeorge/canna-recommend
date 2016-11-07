@@ -3,7 +3,8 @@ from pymongo import MongoClient
 import pandas as pd
 from datetime import datetime
 
-DB_NAME = 'leafly_backup_2016-11-01'#'leafly'
+DB_NAME = 'leafly_backup_2016-11-01'  # 'leafly'
+
 
 def drop_everything():
     client = MongoClient()
@@ -17,6 +18,7 @@ def drop_everything():
 
     client.close()
 
+
 def count_reviews(dbname=DB_NAME):
     '''
     counts number of reviews for each strain in the db
@@ -24,16 +26,18 @@ def count_reviews(dbname=DB_NAME):
     client = MongoClient()
     db = client[dbname]
     total = 0
-    coll_skips = set(['system.indexes', 'review_counts', 'scraped_review_pages'])
+    coll_skips = set(
+        ['system.indexes', 'review_counts', 'scraped_review_pages'])
     for c in db.collection_names():
         if c in coll_skips:
             continue
-        count = db[c].count() - 3 # correct for info entries
+        count = db[c].count() - 3  # correct for info entries
         print c, 'number of reviews:', count
         total += count
 
     client.close()
     return total
+
 
 def get_list_of_scraped(dbname=DB_NAME):
     '''
@@ -42,7 +46,8 @@ def get_list_of_scraped(dbname=DB_NAME):
     client = MongoClient()
     db = client[dbname]
     scraped = []
-    coll_skips = set(['system.indexes', 'review_counts', 'scraped_review_pages'])
+    coll_skips = set(
+        ['system.indexes', 'review_counts', 'scraped_review_pages'])
     for c in db.collection_names():
         if c in coll_skips:
             continue
@@ -51,6 +56,7 @@ def get_list_of_scraped(dbname=DB_NAME):
     client.close()
     return scraped
 
+
 def count_strains():
     '''
     counts number of strains in db with reviews
@@ -58,7 +64,8 @@ def count_strains():
     client = MongoClient()
     db = client[DB_NAME]
     counts = 0
-    coll_skips = set(['system.indexes', 'review_counts', 'scraped_review_pages'])
+    coll_skips = set(
+        ['system.indexes', 'review_counts', 'scraped_review_pages'])
     for c in db.collection_names():
         if c in coll_skips:
             continue
@@ -66,6 +73,7 @@ def count_strains():
 
     client.close()
     return counts
+
 
 def backup_dataset(db1=DB_NAME, db2=None):
     '''
@@ -92,6 +100,7 @@ def backup_dataset(db1=DB_NAME, db2=None):
 
     client.close()
 
+
 def remove_dupes(test=True, dbname=None):
     '''
     removes dupes by matches in text entry.
@@ -109,29 +118,31 @@ def remove_dupes(test=True, dbname=None):
         else:
             db = client[dbname]
 
-    coll_skips = set(['system.indexes', 'review_counts', 'scraped_review_pages'])
+    coll_skips = set(
+        ['system.indexes', 'review_counts', 'scraped_review_pages'])
     for c in db.collection_names():
         if c in coll_skips:
             continue
         cursor = db[c].aggregate(
-        [
-        # sometimes have the same text but different users...e.g. anonymous and not
-            {"$group": {"_id": {"text": "$text", "user": "$user"},
-                        "scrape_times": {"$addToSet": "$scrape_times"},
-                        "review_count": {"$addToSet": "$review_count"},
-                        "genetics": {"$addToSet": "$genetics"},
-                        "unique_ids": {"$addToSet": "$_id"},
-                        "unique_text": {"$addToSet": "$text"},
-                        "count": {"$sum": 1}
-                        }
-            },
-            {"$match": {"count": { "$gte": 2 },
-                       "$size": {"scrape_times": {"$eq":0}},
-                       "$size": {"review_count": {"$eq":0}},
-                       "$size": {"genetics": {"$eq":0}}
-                       }
-            }
-        ]
+            [
+                # sometimes have the same text but different users...e.g.
+                # anonymous and not
+                {"$group": {"_id": {"text": "$text", "user": "$user"},
+                            "scrape_times": {"$addToSet": "$scrape_times"},
+                            "review_count": {"$addToSet": "$review_count"},
+                            "genetics": {"$addToSet": "$genetics"},
+                            "unique_ids": {"$addToSet": "$_id"},
+                            "unique_text": {"$addToSet": "$text"},
+                            "count": {"$sum": 1}
+                            }
+                 },
+                {"$match": {"count": {"$gte": 2},
+                            "$size": {"scrape_times": {"$eq": 0}},
+                            "$size": {"review_count": {"$eq": 0}},
+                            "$size": {"genetics": {"$eq": 0}}
+                            }
+                 }
+            ]
         )
 
         response = []
@@ -144,29 +155,30 @@ def remove_dupes(test=True, dbname=None):
         db[c].delete_many({"_id": {"$in": response}})
 
         cursor = db[c].aggregate(
-        [
-            {"$group": {"_id": {"text": "$text", "user": "$user"},
-                        "scrape_times": {"$addToSet": "$scrape_times"},
-                        "review_count": {"$addToSet": "$review_count"},
-                        "genetics": {"$addToSet": "$genetics"},
-                        "unique_ids": {"$addToSet": "$_id"},
-                        #"unique_text": {"$addToSet": "$text"},
-                        "count": {"$sum": 1}
-                        }
-            },
-            {"$match": {"count": { "$gte": 2 },
-                       "$size": {"scrape_times": {"$eq":0}},
-                       "$size": {"review_count": {"$eq":0}},
-                       "$size": {"genetics": {"$eq":0}}
-                       }
-            }
-        ]
+            [
+                {"$group": {"_id": {"text": "$text", "user": "$user"},
+                            "scrape_times": {"$addToSet": "$scrape_times"},
+                            "review_count": {"$addToSet": "$review_count"},
+                            "genetics": {"$addToSet": "$genetics"},
+                            "unique_ids": {"$addToSet": "$_id"},
+                            #"unique_text": {"$addToSet": "$text"},
+                            "count": {"$sum": 1}
+                            }
+                 },
+                {"$match": {"count": {"$gte": 2},
+                            "$size": {"scrape_times": {"$eq": 0}},
+                            "$size": {"review_count": {"$eq": 0}},
+                            "$size": {"genetics": {"$eq": 0}}
+                            }
+                 }
+            ]
         )
         cur = list(cursor)
         if len(cur) != 0:
             raise Exception('still', len(cur), 'dupes left:', cur)
 
     client.close()
+
 
 def subset_data():
     '''
@@ -175,7 +187,8 @@ def subset_data():
     client = MongoClient()
     db = client[DB_NAME]
     coll_skips = set(['system.indexes'])
-    # looks for something with a sufficient amount of entries that probably has duplicates
+    # looks for something with a sufficient amount of entries that probably
+    # has duplicates
     for c in db.collection_names():
         if c in coll_skips:
             continue
@@ -191,6 +204,7 @@ def subset_data():
     df = pd.DataFrame(entries)
     return c, df
 
+
 def test_remove_dupes(c):
     '''
     testing to make sure removing duplicates works
@@ -200,10 +214,11 @@ def test_remove_dupes(c):
     client = MongoClient()
     db = client['testing_leafly']
     cursor = db[c].aggregate(
-    [
-        {"$group": {"_id": "$text", "unique_ids": {"$addToSet": "$_id"}, "unique_text": {"$addToSet": "$text"}, "count": {"$sum": 1}}},
-        {"$match": {"count": { "$gte": 2 }}}
-    ]
+        [
+            {"$group": {"_id": "$text", "unique_ids": {"$addToSet": "$_id"},
+                        "unique_text": {"$addToSet": "$text"}, "count": {"$sum": 1}}},
+            {"$match": {"count": {"$gte": 2}}}
+        ]
     )
 
     cursor = list(cursor)
@@ -219,14 +234,16 @@ def test_remove_dupes(c):
     db[c].delete_many({"_id": {"$in": response}})
 
     cursor = db[c].aggregate(
-    [
-        {"$group": {"_id": "$text", "unique_text": {"$addToSet": "$text"}, "count": {"$sum": 1}}},
-        {"$match": {"count": { "$gte": 2 }}}
-    ]
+        [
+            {"$group": {"_id": "$text", "unique_text": {
+                "$addToSet": "$text"}, "count": {"$sum": 1}}},
+            {"$match": {"count": {"$gte": 2}}}
+        ]
     )
     client.close()
     df = pd.DataFrame(list(db[c].find()))
     return cursor, df
+
 
 def check_if_rev_count(dbname=None):
     '''
@@ -246,14 +263,14 @@ def check_if_rev_count(dbname=None):
         if c in coll_skips:
             continue
         print c
-        rev_cnt = db[c].find({'review_count': {'$exists':True}}).count()
+        rev_cnt = db[c].find({'review_count': {'$exists': True}}).count()
         if rev_cnt > 0:
             has_rev_cnt.append(1)
         else:
             has_rev_cnt.append(0)
         products.append(c)
 
-    df = pd.DataFrame({'product':products, 'has_review_count':has_rev_cnt})
+    df = pd.DataFrame({'product': products, 'has_review_count': has_rev_cnt})
 
     print 'number products with review count:', df[df['has_review_count'] == 1].shape[0]
     print 'number products withOUT review count:', df[df['has_review_count'] == 0].shape[0]
@@ -274,7 +291,8 @@ def check_scraped_reviews(dbname=None):
     client = MongoClient()
     db = client[dbname]
     remove_dupes(test=False, dbname=dbname)
-    coll_skips = set(['system.indexes', 'review_counts', 'scraped_review_pages'])
+    coll_skips = set(
+        ['system.indexes', 'review_counts', 'scraped_review_pages'])
     #
     reviews_scraped = []
     products = []
@@ -283,13 +301,14 @@ def check_scraped_reviews(dbname=None):
     for c in db.collection_names():
         if c in coll_skips:
             continue
-        rev_cnt = db[c].find({'review_count': {'$exists':True}}).count()
+        rev_cnt = db[c].find({'review_count': {'$exists': True}}).count()
         if rev_cnt > 0:
-            rev_cnt = db[c].find({'review_count': {'$exists':True}})[0]['review_count'][-1]
+            rev_cnt = db[c].find({'review_count': {'$exists': True}})[
+                0]['review_count'][-1]
             # sometimes review counts are off by one, other times not...
             # if rev_cnt != 0:
             #     rev_cnt += 1 # correct for leafly miscounting
-            count = db[c].count() - 3 # correct for metainfo entries
+            count = db[c].count() - 3  # correct for metainfo entries
             reviews_scraped.append(count)
             products.append(c)
             review_count.append(rev_cnt)
@@ -304,10 +323,12 @@ def check_scraped_reviews(dbname=None):
             review_count.append(rev_cnt)
             needs_scrape.append(1)
 
-    df = pd.DataFrame({'product':products, 'reviews_scraped':reviews_scraped, 'review_count':review_count, 'needs_scrape':needs_scrape})
+    df = pd.DataFrame({'product': products, 'reviews_scraped': reviews_scraped,
+                       'review_count': review_count, 'needs_scrape': needs_scrape})
     print df[df['needs_scrape'] == 1].shape[0], 'products need scraping out of', df.shape[0]
 
     return needs_scrape, df
+
 
 def check_for_metadata(dbname=DB_NAME):
     '''
@@ -316,7 +337,8 @@ def check_for_metadata(dbname=DB_NAME):
     '''
     client = MongoClient()
     db = client[dbname]
-    coll_skips = set(['system.indexes', 'review_counts', 'scraped_review_pages'])
+    coll_skips = set(
+        ['system.indexes', 'review_counts', 'scraped_review_pages'])
     #
     products = []
     has_genetics = []
@@ -325,20 +347,22 @@ def check_for_metadata(dbname=DB_NAME):
     for c in db.collection_names():
         if c in coll_skips:
             continue
-        gen_cnt = db[c].find({'genetics': {'$exists':True}}).count()
-        time_cnt = db[c].find({'scrape_times': {'$exists':True}}).count()
-        rev_cnt = db[c].find({'review_count': {'$exists':True}}).count()
+        gen_cnt = db[c].find({'genetics': {'$exists': True}}).count()
+        time_cnt = db[c].find({'scrape_times': {'$exists': True}}).count()
+        rev_cnt = db[c].find({'review_count': {'$exists': True}}).count()
         products.append(c)
         has_genetics.append(gen_cnt)
         has_time.append(time_cnt)
         has_cnt.append(rev_cnt)
 
-    df = pd.DataFrame({'product':products, 'gen_cnt':has_genetics, 'time_cnt':has_time, 'rev_cnt':has_cnt})
+    df = pd.DataFrame({'product': products, 'gen_cnt': has_genetics,
+                       'time_cnt': has_time, 'rev_cnt': has_cnt})
     print df.shape[0], 'total products,', df.gen_cnt.sum(), \
         'count with genetics', df.time_cnt.sum(), 'with scrapetimes', \
         df.rev_cnt.sum(), 'with review_count'
 
     return df
+
 
 def count_prods_with_no_revs(dbname=DB_NAME):
     '''
@@ -347,17 +371,18 @@ def count_prods_with_no_revs(dbname=DB_NAME):
     '''
     client = MongoClient()
     db = client[dbname]
-    coll_skips = set(['system.indexes', 'review_counts', 'scraped_review_pages'])
+    coll_skips = set(
+        ['system.indexes', 'review_counts', 'scraped_review_pages'])
     #
     has_reviews = 0
     no_reviews = 0
     for c in db.collection_names():
         if c in coll_skips:
             continue
-        everything = db[c].find({"scrape_times":{"$exists":False},
-                               "review_count":{"$exists":False},
-                               "genetics":{"$exists":False}
-                               })
+        everything = db[c].find({"scrape_times": {"$exists": False},
+                                 "review_count": {"$exists": False},
+                                 "genetics": {"$exists": False}
+                                 })
         if len(list(everything)) != 0:
             has_reviews += 1
         else:

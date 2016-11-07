@@ -1,5 +1,6 @@
 
-# http://stackoverflow.com/questions/372885/how-do-i-connect-to-a-mysql-database-in-pythonimport MySQLdb
+# http://stackoverflow.com/questions/372885/how-do-i-connect-to-a-mysql-database-in-pythonimport
+# MySQLdb
 import os
 
 PORT = 3306
