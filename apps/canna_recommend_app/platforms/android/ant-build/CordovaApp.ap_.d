@@ -34,11 +34,13 @@
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/index.html \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/jquery_mobile \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/js \
+/media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/main.html \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/node_modules \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/package.json \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/phonegap.js \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/plugins \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/recommendations.html \
+/media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/rec_body.html \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/res \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/spec \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/spec.html \
