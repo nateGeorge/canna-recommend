@@ -16,7 +16,7 @@ import db_functions as dbfunc
 import numpy as np
 
 delay_penalty = 1 # time to wait until starting next thread if can't scrape current one
-#ua = UserAgent()
+ua = UserAgent()
 
 STRAIN_PAGE_FILE = 'leafly_alphabetic_strains_page_' + datetime.utcnow().isoformat()[:10] + '.pk'
 NEW_STRAIN_PAGE_FILE = 'leafly_newest_strains_page_' + datetime.utcnow().isoformat()[:10] + '.pk'
@@ -35,7 +35,7 @@ def setup_driver():
     driver.set_window_size(1920, 1080)
     return driver
 
-def clear_prompts():
+def clear_prompts(driver):
     '''
     clears 'are you 21+?' and 'signup for newsletter' prompts
     clicks the buttons so they go away
@@ -62,6 +62,12 @@ def clear_prompts():
                 signup == False
             except:
                 pass
+    cookies = driver.get_cookies() # for storing cookies after clicking verification buttons
+    cooks = {}
+    for c in cookies:
+        cooks[c['name']] = c['value'] # map it to be usable for requests
+
+    return cooks
 
 def load_current_strains(correct_names=False):
     '''
@@ -588,11 +594,7 @@ def get_strains_left_to_scrape(strains):
 if __name__ == "__main__":
 
     driver = setup_driver()
-    clear_prompts()
-    cookies = driver.get_cookies() # for storing cookies after clicking verification buttons
-    cooks = {}
-    for c in cookies:
-        cooks[c['name']] = c['value'] # map it to be usable for requests
+    cooks = clear_prompts(driver) # clears prompts and saves cookies
 
     # another site to scrape:
     # base_url = 'https://weedmaps.com/'

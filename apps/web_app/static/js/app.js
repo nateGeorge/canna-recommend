@@ -11,7 +11,13 @@ function load_main() {
           $(this).addClass('active');
         }
     });
-  });
+    $.post(post_main_addr + '/get_product_words', function (data, err) {
+      words = $.parseJSON(data);
+      categories = Object.keys(words);
+      var num_cats = categories.length;
+      setWords();
+    });
+  }).hide().fadeIn(); // fade in the content
 }
 
 window.onload = load_main();
@@ -134,23 +140,12 @@ $('#explore').click(function () {
 
 $('#home').click(function () {
   load_main();
-  $('#words').ready(function () {
-    $.post(post_main_addr + '/get_product_words', function (data, err) {
-      words = $.parseJSON(data);
-      categories = Object.keys(words);
-      var num_cats = categories.length;
-      setWords();
-    });
-  });
 });
 
 $('#refresh').click(function() {
   get_chosen_words();
   console.log(chosen_words);
-  setWords();
-  $('.list-group-item').each(function(i, v) {
-    if ($(v).hasClass('active')) {
-      $(this).removeClass('active');
-    }
+  $('#landing').fadeOut(function () {
+    load_main();
   });
 });

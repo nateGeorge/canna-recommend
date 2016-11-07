@@ -86,3 +86,11 @@ div.container {
     float: right !important;
   }
 }
+
+/*speed up fadein a bit; it was slow*/
+.fadeInDown {
+    -webkit-animation-name: fadeInDown;
+    animation-name: fadeInDown;
+    -webkit-animation-duration: 0.5s;
+    animation-duration: 0.5s;
+}

@@ -1,14 +1,14 @@
 # canna-recommend
 Recommend cannabis strains and products to users, because there are thousands of strains and not enough time to learn about them all.
 
-# Directions for running
+# Directions for deployment
 Install nltk packages:
 ```python
 import nltk
 for i in ['stopwords', 'wordnet']:
   nltk.download(i)
 ```
-Install mongodb.
+[Install mongodb](https://docs.mongodb.com/v3.2/tutorial/install-mongodb-on-ubuntu/).
 First, import the database:
 
 ```bash
@@ -25,6 +25,16 @@ If you get an error, you may need to up the ulimit: http://stackoverflow.com/que
 (The db was exported with `mongodump -d leafly_backup_2016-11-01 leafly_backup_2016-11-01`)
 Make sure to run all scripts from the main directory of the project (canna-recommend).  E.g. python2 apps/web_app/app.py
 This is due to relative imports in the script, which I standardized by expecting the script to be run from the home dir.
+
+# Spinning up AWS, etc
+You might have to run `sudo service mongod start` after starting the instance.  Check to make sure mongo is working with `service mongo status`.
+
+You will have to redirect the port to port 80 (standard for browsers): `sudo iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-ports 8000` (https://gist.github.com/kentbrew/776580), may also need to do `sudo iptables -t nat -D PREROUTING 1`
+
+
+I got a domain name on namecheap for less than $10 for a year.  Then, I followed [this tutorial](http://techgenix.com/namecheap-aws-ec2-linux/) to get the address forwarding to the AWS instance.
+
+Clone the repo, and go to the main directory.  Open up a tmux shell (`tmux new -s server`).  `ctrl+b`, then `d` to exit the session.  `tmux attach -t server` to get back in.  Run `python apps/web_app/app.py` and it should startup.
 
 # Phone blues
 
