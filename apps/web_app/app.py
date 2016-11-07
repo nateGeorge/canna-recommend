@@ -51,7 +51,12 @@ def send_words():
     return resp
 
 if __name__ == '__main__':
-    rec_engine = glp.load_engine()
+    latest_model = 'leafly/10groupsrec_engine.model'
+    if not os.path.exists(latest_model):
+        glp.train_and_save_everything()
+    else:
+        rec_engine = glp.load_engine(filename=latest_model)
+    
     prod_group_dfs, user_group_dfs = glp.load_group_dfs()
     prod_top_words, prod_word_counter = glp.load_top_words()
     app.run(host='0.0.0.0', port=10001, debug=True, threaded=True)

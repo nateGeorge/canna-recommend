@@ -1,8 +1,8 @@
 import graphlab as gl
-import data_preprocess as dp
+import leafly.data_preprocess as dp
 from graphlab.toolkits.cross_validation import KFold
 from graphlab.toolkits.model_parameter_search import grid_search
-import nlp_funcs as nl
+import leafly.nlp_funcs as nl
 from collections import Counter
 import pandas as pd
 import cPickle as pk
@@ -11,8 +11,7 @@ import numpy as np
 import collections
 import os
 
-
-def load_everything():
+def load_everything(drop=True):
     '''
     loads the dataframe of reviews data, removes 'Anonymous' reviews
     and drops columns we don't need for the recommender engine
@@ -20,28 +19,29 @@ def load_everything():
 
     df = dp.load_data()
     # drop everything but user, product, rating
-    df.drop(['date', 'time', 'review'], axis=1, inplace=True)
+    if drop:
+        df.drop(['date', 'time', 'review'], axis=1, inplace=True)
     # remove user 'Anonymous' -- necessary to match up size of products from
     # data_preprocess get users and products func
     df_no_anon = df[df['user'] != 'Anonymous']
 
     return df_no_anon
 
-
-def train_engine(df, num_factors=20):
+def train_engine(df, num_factors=10, max_iterations=50):
     '''
+    found 10 to be a suitable number from gridsearching
     trains recommendation engine on supplied dataframe with 'user' and 'review'
     columns
     returns engine for later use
     '''
     data = gl.SFrame(df)
-    num_factors = 20
     rec_engine = gl.factorization_recommender.create(observation_data=data,
                                                      user_id="user",
                                                      item_id="product",
                                                      target='rating',
                                                      solver='auto',
-                                                     num_factors=num_factors
+                                                     num_factors=num_factors,
+                                                     max_iterations=max_iterations
                                                      )
     return rec_engine
 
@@ -160,14 +160,14 @@ def get_top_ngrams(group_dfs, num_words=200, ngram_range=(2, 2)):
     return top_words, word_counter
 
 
-def save_engine(rec_engine, filename='leafly/20groupsrec_engine.model'):
+def save_engine(rec_engine, filename='leafly/10groupsrec_engine.model'):
     '''
     saves recommendation engine for later use
     '''
     rec_engine.save(filename)
 
 
-def load_engine(filename='leafly/20groupsrec_engine.model'):
+def load_engine(filename='leafly/10groupsrec_engine.model'):
     return gl.load_model(filename)
 
 
@@ -284,11 +284,10 @@ def get_better_recs(rec_engine, words, group_dfs, top_words, prod_user='product'
     if prod_user == 'products':
         sims = get_prod_similarity(words, top_words)
         top_idxs = np.argsort(sims.values())[::-1] # highest to lowest relevance
-        return top_idxs
         # for now return the top 20 most reviewed strains in the category
-        prods = group_dfs[top_idx]['product'].value_counts()
-        prods20 = prods[:20].index
-        return prods, np.random.choice(prods20, size=size, replace=False)
+        prods = group_dfs[top_idxs[0]]['product'].value_counts()
+        prods = prods.index
+        return prods, np.random.choice(prods, size=size, replace=False)
 
 
 def pickle_group_dfs(prod_group_dfs, user_group_dfs, prod_group_dfs_filename='prod_group_dfs.pk', user_group_dfs_filename='user_group_dfs.pk'):
@@ -322,34 +321,42 @@ def train_and_save_everything():
     trains model and pickles and saves everything for later use
     use this if deploying on a server etc
     '''
-    df = load_everything()
+    df = load_everything(drop=False)
+    df2 = dp.get_users_more_than_2_reviews(df)
+    df.drop(['date', 'time', 'review'], axis=1, inplace=True)
+    df2clean = dp.get_users_more_than_2_reviews(df)
     if os.path.exists('leafly/20groupsrec_engine.model'):
         rec_engine = load_engine()
     else:
-        rec_engine = train_engine(df)
+        rec_engine = train_engine(df2clean, max_iterations=400)
         save_engine(rec_engine)
 
-    prod_group_dfs, user_group_dfs = get_latent_feature_groups(rec_engine)
+    prod_group_dfs, user_group_dfs = get_latent_feature_groups(rec_engine, df2)
     pickle_group_dfs(prod_group_dfs, user_group_dfs)
     prod_top_words, prod_word_counter = get_top_words(prod_group_dfs)
     pickle_top_words(prod_top_words, prod_word_counter)
 
+    return rec_engine
+
 if __name__ == "__main__":
     rec_engine = load_engine()
-    prod_group_dfs, user_group_dfs = get_latent_feature_groups(rec_engine)
+    prod_group_dfs, user_group_dfs = load_group_dfs()
     test_product_words = ['intense', 'fruity', 'fire']
-    prod_top_words, prod_word_counter = load_top_words()
-    recs, top = get_recs(rec_engine, test_product_words,
-                         prod_group_dfs, prod_top_words, prod_user='products', size=3)
-    idxs = get_better_recs(rec_engine, test_product_words,
+    prod_top_words, prod_word_counter = get_top_words(prod_group_dfs)
+    prod_top_bigrams, prod_bigram_counter = get_top_ngrams(prod_group_dfs)#load_top_words()
+    # recs, top = get_recs(rec_engine, test_product_words,
+    #                      prod_group_dfs, prod_top_words, prod_user='products', size=3)
+    recs, top3 = get_better_recs(rec_engine, test_product_words,
                          prod_group_dfs, prod_top_words, prod_user='products', size=50)
-    # df_prod_top_words = {}
-    # for p in prod_top_words:
-    #     df_prod_top_words[p] = pd.DataFrame({'word':prod_top_words[p].keys(), 'vector':prod_top_words[p].values()})
 
     # for checking out the top few words in each group
-    # for p in df_prod_top_words:
-    #     print df_prod_top_words[p]['word'].head()
+    df_prod_top_words = {}
+    for p in prod_top_words:
+        df_prod_top_words[p] = pd.DataFrame({'word':prod_top_words[p].keys(), 'vector':prod_top_words[p].values()})
+        df_prod_top_words[p] = df_prod_top_words[p].sort_values(by='vector', ascending=False)
+
+    for p in df_prod_top_words:
+        print df_prod_top_words[p]['word'].head(20)
 
     # user_top_words, user_word_counter = get_top_words(user_group_dfs)
     #

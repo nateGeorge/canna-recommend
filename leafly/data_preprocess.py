@@ -7,6 +7,15 @@ import re
 
 DB_NAME = 'leafly_backup_2016-11-01'  # 'leafly'
 
+def get_users_more_than_2_reviews(df):
+    '''
+    filters dataframe to only included users with more than 2 reviews
+    '''
+    new_df = df.copy()
+    users = df.groupby('user').count()
+    gt2 = set(users[users['product'] > 2].index)
+    new_df = new_df[new_df['user'].isin(gt2)]
+    return new_df
 
 def clean_reviews_func(df):
     '''
@@ -67,7 +76,7 @@ def load_data(fix_names=True, clean_reviews=True):
     df['date'] = dates.apply(lambda x: x.date())
     df['time'] = dates.apply(lambda x: x.time())
     df = df[df['user'] != 'Anonymous']
-    df = df.drop_duplicates()
+    df = df.drop_duplicates(subset=[u'product', u'rating', u'review', u'user'])
     return df
 
 

@@ -6,6 +6,7 @@ import nlp_funcs as nl
 from collections import Counter
 import pandas as pd
 import scrape_leafly as sl
+import matplotlib.pyplot as plt
 
 
 def basic_fr(train, test):
@@ -36,7 +37,6 @@ def basic_fr(train, test):
     print 'raw mse score:', dp.score_model_mse(test_og.rating, test.rating)
 
     return rec_engine
-
 
 def gridsearch_big_step(df):
     '''
@@ -141,13 +141,32 @@ def gridsearch_alot(df):
 
 
 if __name__ == "__main__":
-
     df = dp.load_data()
-    # drop everything but user, product, rating
     df.drop(['date', 'time', 'review'], axis=1, inplace=True)
-    grid = gridsearch_alot(df)
-    grid.save('gridsearch_alot.sframe')
-    print grid.get_results()
+    df2 = dp.get_users_more_than_2_reviews(df)
+    # # drop everything but user, product, rating
+    grid2 = gridsearch_alot(df2)
+    res2 = grid2.get_results()
+    grid2.save('gridsearch_gt2_reviews.sframe')
+    res2df = res2.to_dataframe() # converts to pandas dataframe
+    res2df = res2df.sort_values(by='num_factors')
+    res2df.to_csv('res2df.csv')
+    res2df.plot(x='num_factors', y='mean_validation_rmse')
+    plt.show()
+    res2df.plot(x='num_factors', y='mean_training_rmse')
+    plt.show()
+    res2df.plot(x='num_factors', y='mean_training_recall@5')
+    plt.show()
+    res2df.plot(x='num_factors', y='mean_validation_recall@5')
+    plt.show()
+    res2df.plot(x='num_factors', y='mean_validation_precision@5')
+    plt.show()
+    res2df.plot(x='num_factors', y='mean_training_precision@5')
+    plt.show()
+    # looks like at about 10 factors, things flatten out
+
+
+    # print grid.get_results()
     # remove user 'Anonymous' -- necessary to match up size of products from
     # data_preprocess get users and products func
 

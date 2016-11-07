@@ -31,19 +31,19 @@ def pos_tags(sentence):
 def get_stopwords():
     # words I noticed came up in the first tfidf run, which should be excluded
     EXTRA_STOP_WORDS = ['strain', 'high', 'great', 'good', 'nice', 'like', 'taste',
-                        'really', 'love', 'smell', 'smoke', 'favorite', 'best', ]
+                        'really', 'love', 'smell', 'smoke', 'favorite', 'best']
 
     ESW2 = ['amazing',
             u'blue',
             u'dream',
             u'happy',
-            u'head',
-            u'pain',
-            u'relaxing',
-            u'sleep',
-            u'sour',
-            u'strong',
-            u'sweet',
+            # u'head',
+            # u'pain',
+            # u'relaxing',
+            # u'sleep',
+            # u'sour',
+            # u'strong',
+            # u'sweet',
             u'time']
 
     # ESW3 = ['bud',
@@ -72,8 +72,13 @@ def get_stopwords():
             'get', 'gdp', 'ever', 'always', 'atf', 'awesome', 'beautiful', 'bit', 'bubba', 'bud', 'buzz', 'chemdawg',
             'crack', 'definitely', 'effect']
 
+    ESW5 = ['felt', 'also', 'try', 'hard', 'around']
+
+    ESW6 = ['way', 'say', 'bad', 'lot', 'tried', 'though', 'flower', 'want', 'use', 'tried', 'better',
+            'even', 'last', 'put']
+
     stops = set(list(stopwords.words('english'))) | set(
-        EXTRA_STOP_WORDS) | set(ESW2) | set(ESW4)
+        EXTRA_STOP_WORDS) | set(ESW2) | set(ESW4) | set(ESW5) | set(ESW6)
 
     return stops
 
@@ -151,6 +156,7 @@ def get_top_words_lemmatize(df, num_words='all', ngram_range=(1, 1)):
     reviews = df['review'].map(lambda x: ' '.join(
         [lemmatizer.lemmatize(w) for w in x.split()])).values
     reviews = [s.encode('ascii', errors='ignore') for s in reviews]
+    reviews = [re.sub('\d*', '', r) for r in reviews]
 
     tfvect = TfidfVectorizer(
         stop_words=stops, max_df=0.75, min_df=5, ngram_range=ngram_range)
@@ -293,7 +299,10 @@ def get_user_word_choices():
                              'energy',
                              'energetic',
                              'relief',
-                             'clear headed']
+                             'clear headed',
+                             'relaxing',
+                             'chill']
+
     word_dict['taste'] = ['potent',
                           'pineapple',
                           'orange',
@@ -305,12 +314,22 @@ def get_user_word_choices():
                           'cherry',
                           'banana',
                           'fruity pebbles',
-                          'juicy fruit']
+                          'juicy fruit',
+                          'fruity',
+                          'sweet',
+                          'light',
+                          'grape',
+                          'cheese'
+                          ]
+
     word_dict['conditions'] = ['insomnia',
                                'stress',
                                'headache',
                                'depression',
-                               'anxiety']
+                               'anxiety',
+                               'pain'
+                               'back pain'] # need to translate this to 'back'
+
     word_dict['effects'] = ['body',
                             'couch',
                             'mellow',
@@ -319,9 +338,25 @@ def get_user_word_choices():
                             'cerebral',
                             'body buzz',
                             'couch lock',
-                            'long lasting']
+                            'long lasting',
+                            'strong',
+                            'head',
+                            'relaxing',
+                            'sleep',
+                            'couch',
+                            'energetic']
+
     word_dict['times'] = ['daytime',
                           'night',
-                          'wake bake']
+                          'wake bake',
+                          'day']
 
     return word_dict
+
+def check_word_choices_in_topwords(word_dict, prod_top_words):
+    '''
+    checks to make sure each word in the word_dict is in prod_top_words
+
+    returns list of words not in the top_words, but in the word_dict
+    '''
+    pass
