@@ -17,6 +17,19 @@ function load_main() {
             var num_cats = categories.length;
             setWords();
         });
+        // need to set this here, otherwise explore doesn't exist yet
+        $('#explore').click(function() {
+            console.log('exploring...');
+            get_chosen_words();
+            console.log(chosen_words);
+            $('#landing').fadeOut(function() {
+                // make recommendation
+                $('.page-wrap').load('rec_body.html', complete = function() {
+                    recommend(chosen_words);
+                });
+            });
+
+        });
     }).hide().fadeIn(); // fade in the content
 }
 
@@ -130,18 +143,6 @@ $.ajaxSetup({
 });
 
 // navigation actions
-$('#explore').click(function() {
-    console.log('exploring...');
-    get_chosen_words();
-    console.log(chosen_words);
-    $('#landing').fadeOut(function() {
-        // make recommendation
-        $('.page-wrap').load('rec_body.html', complete = function() {
-            recommend(chosen_words);
-        });
-    });
-
-});
 
 $('#home').click(function() {
     load_main();
