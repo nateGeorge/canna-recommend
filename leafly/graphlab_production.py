@@ -199,7 +199,7 @@ def write_top_words(words, filename):
 
 def get_prod_similarity(words, top_words):
     '''
-    gets tfidf similarity (cosine) of words vectorized into tfidf and prod group
+    gets tfidf similarity of words vectorized into tfidf and prod group
     words
 
     args:
@@ -237,6 +237,61 @@ def get_recs(rec_engine, words, group_dfs, top_words, prod_user='user', size=3):
     finds products most similar to those words (with some randomness)
 
     words -- list of words chosen by user
+    top_words -- dict of words: vector value from get_top_words
+    '''
+    if prod_user == 'products':
+        sims = get_prod_similarity(words, top_words)
+        top_idx = np.argmax(sims)
+        # for now return the top 20 most reviewed strains in the category
+        prods = group_dfs[top_idx]['product'].value_counts()
+        prods20 = prods[:20].index
+        return prods, np.random.choice(prods20, size=size, replace=False)
+
+def get_recs(rec_engine, words, group_dfs, top_words, prod_user='user', size=3):
+    '''
+    takes in list of words and groups, returns recommended products (strains)
+
+    args:
+    rec_engine: recommendation engine from graphlab
+
+    if prod_user is 'user', group_dfs should be the user group dfs.
+    finds users most similar to words chosen and returns
+    recommendations for them from the rec engine
+
+    if prod_user is 'products', group_dfs should be the product group dfs
+    finds products most similar to those words (with some randomness)
+
+    words -- list of words chosen by user
+    top_words -- dict of words: vector value from get_top_words
+    '''
+    if prod_user == 'products':
+        sims = get_prod_similarity(words, top_words)
+        top_idx = np.argmax(sims)
+        # for now return the top 20 most reviewed strains in the category
+        prods = group_dfs[top_idx]['product'].value_counts()
+        prods20 = prods[:20].index
+        return prods, np.random.choice(prods20, size=size, replace=False)
+
+def get_better_recs(rec_engine, words, group_dfs, top_words, prod_user='product', size=3):
+    '''
+    makes improved recommendations
+    first, chooses 3 top product groups most similar to chosen words
+    then chooses top products from each group that match words best
+
+    takes in list of words and groups, returns recommended products (strains)
+
+    args:
+    rec_engine: recommendation engine from graphlab
+
+    if prod_user is 'user', group_dfs should be the user group dfs.
+    finds users most similar to words chosen and returns
+    recommendations for them from the rec engine
+
+    if prod_user is 'products', group_dfs should be the product group dfs
+    finds products most similar to those words (with some randomness)
+
+    words -- list of words chosen by user
+    top_words -- dict of words: vector value from get_top_words
     '''
     if prod_user == 'products':
         sims = get_prod_similarity(words, top_words)
@@ -286,7 +341,11 @@ def train_and_save_everything():
     pickle_top_words(prod_top_words, prod_word_counter)
 
 if __name__ == "__main__":
-    pass
+    rec_engine = load_engine()
+    prod_group_dfs, user_group_dfs = get_latent_feature_groups(rec_engine)
+    test_product_words = ['intense', 'fruity', 'fire']
+    prod_top_words, prod_word_counter = load_top_words()
+    recs, top = get_recs(rec_engine, test_product_words, prod_group_dfs, prod_top_words, prod_user='products', size=3)
     # df_prod_top_words = {}
     # for p in prod_top_words:
     #     df_prod_top_words[p] = pd.DataFrame({'word':prod_top_words[p].keys(), 'vector':prod_top_words[p].values()})

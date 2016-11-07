@@ -141,6 +141,7 @@ if __name__ == "__main__":
     # drop everything but user, product, rating
     df.drop(['date', 'time', 'review'], axis=1, inplace=True)
     grid = gridsearch_alot(df)
+    grid.save('gridsearch_alot.sframe')
     print grid.get_results()
     # remove user 'Anonymous' -- necessary to match up size of products from
     # data_preprocess get users and products func
