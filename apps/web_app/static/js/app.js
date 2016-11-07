@@ -1,4 +1,4 @@
-var post_main_addr = 'http://0.0.0.0:10001'; // address with flask api // 'http://cannadvise.me' 
+var post_main_addr = 'http://cannadvise.me' //'http://35.161.235.42:10001'; // address with flask api
 
 function load_main() {
     console.log('loading...');
