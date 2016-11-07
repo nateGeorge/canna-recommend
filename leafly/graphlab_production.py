@@ -254,7 +254,7 @@ def get_recs(rec_engine, words, group_dfs, top_words, prod_user='user', size=3):
     '''
     if prod_user == 'products':
         sims = get_prod_similarity(words, top_words)
-        top_idx = np.argmax(sims)
+        top_idx = np.argmax(sims.values())
         # for now return the top 20 most reviewed strains in the category
         prods = group_dfs[top_idx]['product'].value_counts()
         prods20 = prods[:20].index
@@ -283,7 +283,8 @@ def get_better_recs(rec_engine, words, group_dfs, top_words, prod_user='product'
     '''
     if prod_user == 'products':
         sims = get_prod_similarity(words, top_words)
-        top_idx = np.argmax(sims)
+        top_idxs = np.argsort(sims.values())[::-1] # highest to lowest relevance
+        return top_idxs
         # for now return the top 20 most reviewed strains in the category
         prods = group_dfs[top_idx]['product'].value_counts()
         prods20 = prods[:20].index
@@ -340,6 +341,8 @@ if __name__ == "__main__":
     prod_top_words, prod_word_counter = load_top_words()
     recs, top = get_recs(rec_engine, test_product_words,
                          prod_group_dfs, prod_top_words, prod_user='products', size=3)
+    idxs = get_better_recs(rec_engine, test_product_words,
+                         prod_group_dfs, prod_top_words, prod_user='products', size=50)
     # df_prod_top_words = {}
     # for p in prod_top_words:
     #     df_prod_top_words[p] = pd.DataFrame({'word':prod_top_words[p].keys(), 'vector':prod_top_words[p].values()})
