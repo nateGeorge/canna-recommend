@@ -316,7 +316,7 @@ def load_top_words(prod_top_words_filename='prod_top_words.pk',
     return prod_top_words, prod_word_counter
 
 
-def train_and_save_everything():
+def train_and_save_everything(filename='leafly/10groupsrec_engine.model'):
     '''
     trains model and pickles and saves everything for later use
     use this if deploying on a server etc
@@ -325,11 +325,11 @@ def train_and_save_everything():
     df2 = dp.get_users_more_than_2_reviews(df)
     df.drop(['date', 'time', 'review'], axis=1, inplace=True)
     df2clean = dp.get_users_more_than_2_reviews(df)
-    if os.path.exists('leafly/20groupsrec_engine.model'):
+    if os.path.exists(filename):
         rec_engine = load_engine()
     else:
         rec_engine = train_engine(df2clean, max_iterations=400)
-        save_engine(rec_engine)
+        save_engine(rec_engine, filename=filename)
 
     prod_group_dfs, user_group_dfs = get_latent_feature_groups(rec_engine, df2)
     pickle_group_dfs(prod_group_dfs, user_group_dfs)
