@@ -43,9 +43,14 @@ function getRandomFromBucket() {
 }
 
 var bucket;
-function getRandomElements(lest, n=3) {
+function getRandomElements(lest, n) {
   // takes in a list and returns n random elements
   // without replacement
+  if (n) {
+    n = 3;
+  } else {
+    n = 3
+  }
   bucket = [];
   var returnlest = [];
 
@@ -91,7 +96,7 @@ function parse_recs(recs) {
   });
 }
 
-function recommend(chosen_words, callback=null) {
+function recommend(chosen_words, callback) {
   $.post(post_main_addr + '/send_words', data={ word_list : chosen_words }, function (data, err) {
     console.log(data);
     recs = JSON.parse(data)['recs'];
