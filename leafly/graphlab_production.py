@@ -199,6 +199,7 @@ def get_rec_based_on_words(words, group='user'):
     group -- either 'product' or 'user', which group the words are meant to
     be compared with
     '''
+    pass
 
 
 def write_top_words(words, filename):
@@ -258,33 +259,6 @@ def get_recs(rec_engine, words, group_dfs, top_words, prod_user='user', size=3):
         prods = group_dfs[top_idx]['product'].value_counts()
         prods20 = prods[:20].index
         return prods, np.random.choice(prods20, size=size, replace=False)
-
-
-def get_recs(rec_engine, words, group_dfs, top_words, prod_user='user', size=3):
-    '''
-    takes in list of words and groups, returns recommended products (strains)
-
-    args:
-    rec_engine: recommendation engine from graphlab
-
-    if prod_user is 'user', group_dfs should be the user group dfs.
-    finds users most similar to words chosen and returns
-    recommendations for them from the rec engine
-
-    if prod_user is 'products', group_dfs should be the product group dfs
-    finds products most similar to those words (with some randomness)
-
-    words -- list of words chosen by user
-    top_words -- dict of words: vector value from get_top_words
-    '''
-    if prod_user == 'products':
-        sims = get_prod_similarity(words, top_words)
-        top_idx = np.argmax(sims)
-        # for now return the top 20 most reviewed strains in the category
-        prods = group_dfs[top_idx]['product'].value_counts()
-        prods20 = prods[:20].index
-        return prods, np.random.choice(prods20, size=size, replace=False)
-
 
 def get_better_recs(rec_engine, words, group_dfs, top_words, prod_user='product', size=3):
     '''
