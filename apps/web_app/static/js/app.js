@@ -131,6 +131,7 @@ $.ajaxSetup({
 
 // navigation actions
 $('#explore').click(function() {
+    console.log('exploring...');
     get_chosen_words();
     console.log(chosen_words);
     $('#landing').fadeOut(function() {
