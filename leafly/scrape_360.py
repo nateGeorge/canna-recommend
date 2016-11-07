@@ -6,8 +6,8 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 import pandas as pd
 
 
-
 ua = UserAgent()
+
 
 def setup_driver():
     dcap = dict(DesiredCapabilities.PHANTOMJS)
@@ -15,6 +15,7 @@ def setup_driver():
     driver = webdriver.PhantomJS(desired_capabilities=dcap)
     driver.set_window_size(1920, 1080)
     return driver
+
 
 def check_rows(res):
     '''
@@ -26,10 +27,11 @@ def check_rows(res):
     there in the format we expect.  Otherwise throws an error
     '''
     soup = bs(res.content, 'lxml')
-    rows = soup.findAll('tr', {'title':'Click To View Detail Test Results'})
+    rows = soup.findAll('tr', {'title': 'Click To View Detail Test Results'})
     if len(rows) == 0 or not res.ok:
         raise Exception('response returned:', res)
     return rows
+
 
 def get_links(rows):
     '''
@@ -48,6 +50,7 @@ def get_links(rows):
     links = list(set([l.get('href') for l in links]))
     return links
 
+
 def check_groups(links):
     '''
     args: takes in list of links from analytical360
@@ -63,14 +66,17 @@ def check_groups(links):
 
     return groups
 
+
 def make_links_dataframe(links):
     '''
     args: list of links
 
     returns: dataframe of links with product group, link
     '''
-    df = pd.DataFrame({'link':links, 'product':[l.split('/')[-2] for l in links]})
+    df = pd.DataFrame({'link': links, 'product': [
+                      l.split('/')[-2] for l in links]})
     return df
+
 
 def extract_info(link):
     '''

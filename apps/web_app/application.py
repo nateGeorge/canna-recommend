@@ -14,17 +14,22 @@ app = Flask(__name__)
 app.debug = True
 
 # home page
+
+
 @app.route('/')
 def index():
     return 'get outta here!'
 
 # returns list of words in different groups as dict
+
+
 @app.route('/get_product_words', methods=['POST'])
 def get_words():
     word_dict = nl.get_product_word_choices()
     resp = flask.Response(json.dumps(word_dict))
     resp.headers['Access-Control-Allow-Origin'] = '*'
     return resp
+
 
 @app.route('/send_words', methods=['POST', 'OPTIONS'])
 def send_words():
@@ -39,9 +44,10 @@ def send_words():
     print request.values
     words = request.form.getlist('word_list[]')
     print words
-    recs, top3 = glp.get_recs(rec_engine, words, prod_group_dfs, prod_top_words, prod_user='products')
+    recs, top3 = glp.get_recs(
+        rec_engine, words, prod_group_dfs, prod_top_words, prod_user='products')
     print top3
-    resp = flask.Response(json.dumps({'recs':top3.tolist()}))
+    resp = flask.Response(json.dumps({'recs': top3.tolist()}))
     resp.headers['Access-Control-Allow-Origin'] = '*'
     return resp
 
