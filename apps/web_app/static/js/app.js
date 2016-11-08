@@ -90,6 +90,9 @@ function load_main() {
         });
 
         $('.bagim').ready(function() {
+            // fit im width to screen (for mobile)
+            var maxW = $(window).width();
+            $(this).css('width', maxW*0.9)
           console.log('bag ready');
           $(chosen_words).each(function(i, v) {
             console.log(v);
