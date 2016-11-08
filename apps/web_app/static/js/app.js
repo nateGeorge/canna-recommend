@@ -78,7 +78,10 @@ function load_main() {
                 // make recommendation
                 $('.page-wrap').load('rec_body.html', complete = function() {
                     recommend(chosen_words);
-                    $('.bagim').ready(function() {
+                    $('#bag_im').ready(function() {
+                      // fit im width to screen (for mobile)
+                      var maxW = $(window).width();
+                      $('#bag_im').css('width', maxW*0.9);
                       console.log('bag ready');
                       $(chosen_words).each(function(i, v) {
                         console.log(v);
@@ -92,7 +95,7 @@ function load_main() {
         $('#bag_im').ready(function() {
           // fit im width to screen (for mobile)
           var maxW = $(window).width();
-          $(this).css('width', maxW*0.9)
+          $('#bag_im').css('width', maxW*0.9);
           console.log('bag ready');
           $(chosen_words).each(function(i, v) {
             console.log(v);
