@@ -1,4 +1,4 @@
-
+# Data Science
 redo gridsearch -- found 10 groups to be best
 better suggestions (more variety, match exact strains, etc) -- still haven't finished
  - match top 3 groups first by scoring function (with some randomness)
@@ -9,12 +9,10 @@ that link to strain page on click -- done
 scrape analytical 360 -- not yet
  - prototype NN % strength regressor
 
-bag-of-words on site that holds your words you've chosen
-
 prototype pyfm -- nope
 
-2H
-finish neural net, try fit
-tt-split
-fix cluster viz
-start heirarchical?
+cluster stuff by tfidf
+
+# Website work:
+bag-of-words on site that holds your words you've chosen
+clicking strain name takes you to leafly page
