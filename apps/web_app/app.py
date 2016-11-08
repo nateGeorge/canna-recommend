@@ -3,9 +3,10 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 import leafly.graphlab_production as glp
 import leafly.nlp_funcs as nl
+import leafly.scrape_leafly as sl
 import json
 import cPickle as pk
-
+import re
 from flask import Flask, request
 import flask
 app = Flask(__name__, static_url_path='')
@@ -32,8 +33,6 @@ def get_words():
 
 @app.route('/send_words', methods=['POST', 'OPTIONS'])
 def send_words():
-    # print request
-    # print 'motherfucker'
     # print request.form['words']
     # word_list = request.form['words']
     # print word_list
@@ -43,14 +42,29 @@ def send_words():
     print request.values
     words = request.form.getlist('word_list[]')
     print words
-    recs, top3 = glp.get_recs(
-        rec_engine, words, prod_group_dfs, prod_top_words, prod_user='products', size=9)
-    print top3
-    resp = flask.Response(json.dumps({'recs': top3.tolist()}))
+    # get slightly more recommendations than show up on one page
+    recs, top, links, toplinks = glp.get_better_recs(link_dict,
+        rec_engine, words, prod_group_dfs, prod_top_words, prod_user='products', size=15)
+    # convert to pretty form
+    print top
+    top = [re.sub('-', ' ', t) for t in top]
+    print top
+    print toplinks
+    # need to convert numpy array to list so it is serializable
+    toplinks = list(toplinks)
+    resp = flask.Response(json.dumps({'recs': top, 'links':toplinks}))
     resp.headers['Access-Control-Allow-Origin'] = '*'
     return resp
 
 if __name__ == '__main__':
+    # link_dict needed to get links from recommendation function
+    strains = sl.load_current_strains(True)
+    # make dict of names to links for sending links to rec page
+    names = [s.split('/')[-1] for s in strains]
+    link_dict = {}
+    for i, n in enumerate(names):
+        link_dict[n] = strains[i]
+
     latest_model = 'leafly/10groupsrec_engine.model'
     if not os.path.exists(latest_model):
         glp.train_and_save_everything(latest_model)
