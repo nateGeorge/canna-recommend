@@ -1,22 +1,25 @@
 var post_main_addr = 'http://0.0.0.0:10001' //'http://cannadvise.me' //'http://35.161.235.42:10001'; // address with flask api
 
 function add_to_bag(word, i) {
+  var index = chosen_words.indexOf(word);
+  if (index != -1) {console.log('already in chosen_words'); return;}
   get_chosen_words();
+  // if it's already in the chosen words, return
   if (i) {
     vpos = 150 + i * 20;
   } else {
     vpos = 150 + chosen_words.length * 30;
   }
   // words on image from here: https://css-tricks.com/text-blocks-over-image/
-  $('.bagim').append(
-  '<h2 class="bag" ' + 'style="top:' + vpos + 'px">'
+  $('ul.bag').append(
+  '<li class="bag_words"><h2 class="bag">'
     + word +
     '<span class="fa-stack fa-1x"> \
       <a> \
         <i class="fa fa-remove fa-stack-1x" style="color:green"></i> \
       </a> \
     </span> \
-  </h2>')
+  </h2></li>')
   // delete element when click 'remove'
   $('.fa-remove').click(function () {
     // strip all whitespace
@@ -34,6 +37,14 @@ function add_to_bag(word, i) {
   });
 }
 
+function remove_from_bag(word) {
+  $('.bag_words').each(function(i, v) {
+    if ($(v).text().trim() == word.trim()) {
+      $(v).remove();
+    }
+  });
+}
+
 function load_main() {
     console.log('loading...');
     $('.page-wrap').load('./main.html', complete = function() {
@@ -42,6 +53,9 @@ function load_main() {
         $('.list-group-item').click(function() {
             if ($(this).hasClass('active')) {
                 $(this).removeClass('active');
+                remove_from_bag(this.innerHTML);
+                var index = chosen_words.indexOf(this.innerHTML);
+                chosen_words.splice(index, 1);
             } else {
                 $(this).addClass('active');
                 add_to_bag(this.innerHTML);
