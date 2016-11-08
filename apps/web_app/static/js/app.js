@@ -1,22 +1,60 @@
-var post_main_addr = 'http://cannadvise.me' //'http://35.161.235.42:10001'; // address with flask api
+var post_main_addr = 'http://0.0.0.0:10001' //'http://cannadvise.me' //'http://35.161.235.42:10001'; // address with flask api
+
+function add_to_bag(word, i) {
+  get_chosen_words();
+  if (i) {
+    vpos = 150 + i * 20;
+  } else {
+    vpos = 150 + chosen_words.length * 30;
+  }
+  // words on image from here: https://css-tricks.com/text-blocks-over-image/
+  $('.bagim').append(
+  '<h2 class="bag" ' + 'style="top:' + vpos + 'px">'
+    + word +
+    '<span class="fa-stack fa-1x"> \
+      <a> \
+        <i class="fa fa-remove fa-stack-1x" style="color:green"></i> \
+      </a> \
+    </span> \
+  </h2>')
+  // delete element when click 'remove'
+  $('.fa-remove').click(function () {
+    // strip all whitespace
+    var cur_word = $(this).parent().parent().parent().text().trim();
+    $(this).parent().parent().parent().remove();
+    // delete from chosen_words
+    var index = chosen_words.indexOf(cur_word);
+    chosen_words.splice(index, 1);
+    // deactivate selected text if visible
+    $('.list-group-item').each(function(i, v) {
+      if ($(v).text() == cur_word) {
+        $(v).removeClass('active');
+      }
+    });
+  });
+}
 
 function load_main() {
     console.log('loading...');
     $('.page-wrap').load('./main.html', complete = function() {
+
         // when the words are clicked, toggle their active state
         $('.list-group-item').click(function() {
             if ($(this).hasClass('active')) {
                 $(this).removeClass('active');
             } else {
                 $(this).addClass('active');
+                add_to_bag(this.innerHTML);
             }
         });
+
         $.post(post_main_addr + '/get_product_words', function(data, err) {
             words = $.parseJSON(data);
             categories = Object.keys(words);
             var num_cats = categories.length;
             setWords();
         });
+
         // need to set this here, otherwise explore doesn't exist yet
         $('#explore').click(function() {
             console.log('exploring...');
@@ -26,10 +64,25 @@ function load_main() {
                 // make recommendation
                 $('.page-wrap').load('rec_body.html', complete = function() {
                     recommend(chosen_words);
+                    $('.bagim').ready(function() {
+                      console.log('bag ready');
+                      $(chosen_words).each(function(i, v) {
+                        console.log(v);
+                        add_to_bag(v, i);
+                      });
+                    });
                 });
             });
-
         });
+
+        $('.bagim').ready(function() {
+          console.log('bag ready');
+          $(chosen_words).each(function(i, v) {
+            console.log(v);
+            add_to_bag(v, i);
+          });
+        });
+
     }).hide().fadeIn(); // fade in the content
 }
 
@@ -105,15 +158,21 @@ function parse_recs(recs) {
     });
 }
 
+var BASE_URL = 'https://www.leafly.com';
+
 function recommend(chosen_words, callback = null) {
     $.post(post_main_addr + '/send_words', data = {
         word_list: chosen_words
     }, function(data, err) {
         console.log(data);
-        recs = JSON.parse(data)['recs'];
+        data = JSON.parse(data)
+        recs = data['recs'];
+        var links = data['links'];
         var recText = parse_recs(recs);
         $('.list-group-item').each(function(i, v) {
-            $(v).text(recs[i].replace(/-/, ' '));
+            $(v).text(recs[i]);
+            $(v).attr('href', BASE_URL + links[i]);
+            $(v).attr('target', 'blank');
             console.log(recs[i]);
         });
     });
@@ -130,8 +189,10 @@ function get_chosen_words() {
     $('.list-group-item').each(function(i, v) {
         if ($(v).hasClass('active')) {
             var text = v.innerHTML;
-            console.log(text);
-            chosen_words.push(text);
+            if (chosen_words.indexOf(text) == -1) {
+              console.log(text);
+              chosen_words.push(text);
+            }
         }
     });
 }
