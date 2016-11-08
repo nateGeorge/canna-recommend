@@ -3,6 +3,7 @@ import leafly.data_preprocess as dp
 from graphlab.toolkits.cross_validation import KFold
 from graphlab.toolkits.model_parameter_search import grid_search
 import leafly.nlp_funcs as nl
+import leafly.scrape_leafly as sl
 from collections import Counter
 import pandas as pd
 import cPickle as pk
@@ -254,13 +255,13 @@ def get_recs(rec_engine, words, group_dfs, top_words, prod_user='user', size=3):
     '''
     if prod_user == 'products':
         sims = get_prod_similarity(words, top_words)
-        top_idx = np.argmax(sims.values())
+        top_idx = np.argsort(sims.values())[::-1]
         # for now return the top 20 most reviewed strains in the category
-        prods = group_dfs[top_idx]['product'].value_counts()
+        prods = group_dfs[top_idx[0]]['product'].value_counts()
         prods20 = prods[:20].index
         return prods, np.random.choice(prods20, size=size, replace=False)
 
-def get_better_recs(rec_engine, words, group_dfs, top_words, prod_user='product', size=3):
+def get_better_recs(link_dict, rec_engine, words, group_dfs, top_words, prod_user='product', size=3):
     '''
     makes improved recommendations
     first, chooses 3 top product groups most similar to chosen words
@@ -285,9 +286,13 @@ def get_better_recs(rec_engine, words, group_dfs, top_words, prod_user='product'
         sims = get_prod_similarity(words, top_words)
         top_idxs = np.argsort(sims.values())[::-1] # highest to lowest relevance
         # for now return the top 20 most reviewed strains in the category
-        prods = group_dfs[top_idxs[0]]['product'].value_counts()
-        prods = prods.index
-        return prods, np.random.choice(prods, size=size, replace=False)
+        prods = group_dfs[top_idxs[0]]['product'].value_counts().index
+        prods20 = prods[:size * 5]
+        links = [link_dict[p] for p in prods]
+        links20 = np.array([link_dict[p] for p in prods20])
+        idx20 = np.random.choice(range(len(prods20)), size=size, replace=False)
+        print idx20
+        return prods, prods[idx20], links, links20[idx20]
 
 
 def pickle_group_dfs(prod_group_dfs, user_group_dfs, prod_group_dfs_filename='prod_group_dfs.pk', user_group_dfs_filename='user_group_dfs.pk'):
@@ -339,14 +344,21 @@ def train_and_save_everything(filename='leafly/10groupsrec_engine.model'):
     return rec_engine
 
 if __name__ == "__main__":
+    strains = sl.load_current_strains(True)
+    # make dict of names to links for sending links to rec page
+    names = [s.split('/')[-1] for s in strains]
+    link_dict = {}
+    for i, n in enumerate(names):
+        link_dict[n] = strains[i]
+
     rec_engine = load_engine()
     prod_group_dfs, user_group_dfs = load_group_dfs()
     test_product_words = ['intense', 'fruity', 'fire']
-    prod_top_words, prod_word_counter = get_top_words(prod_group_dfs)
+    prod_top_words, prod_word_counter = load_top_words(prod_group_dfs)
     prod_top_bigrams, prod_bigram_counter = get_top_ngrams(prod_group_dfs)#load_top_words()
     # recs, top = get_recs(rec_engine, test_product_words,
     #                      prod_group_dfs, prod_top_words, prod_user='products', size=3)
-    recs, top3 = get_better_recs(rec_engine, test_product_words,
+    recs, top, links, toplinks = get_better_recs(link_dict, rec_engine, test_product_words,
                          prod_group_dfs, prod_top_words, prod_user='products', size=50)
 
     # for checking out the top few words in each group
