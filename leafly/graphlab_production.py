@@ -354,7 +354,7 @@ if __name__ == "__main__":
     rec_engine = load_engine()
     prod_group_dfs, user_group_dfs = load_group_dfs()
     test_product_words = ['intense', 'fruity', 'fire']
-    prod_top_words, prod_word_counter = load_top_words(prod_group_dfs)
+    prod_top_words, prod_word_counter = load_top_words()
     prod_top_bigrams, prod_bigram_counter = get_top_ngrams(prod_group_dfs)#load_top_words()
     # recs, top = get_recs(rec_engine, test_product_words,
     #                      prod_group_dfs, prod_top_words, prod_user='products', size=3)
