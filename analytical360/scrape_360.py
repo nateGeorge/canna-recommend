@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 import re
 import os
+import cPickle as pk
 
 ua = UserAgent()
 
@@ -178,26 +179,56 @@ if not os.path.exists(base_im_path):
 # pages that aren't really flowers, but concentrates
 # others that have broken images links
 black_list = set(['http://analytical360.com/m/flowers/604216', 'http://analytical360.com/m/flowers/550371'])
-name_black_list = set(['Raw Pulp CJ', 'Batch 35 Spent Trim'])
+name_black_list = set(['Raw Pulp CJ',
+                        'Batch 35 Spent Trim',
+                        'B21 Spent Trim (CBD)',
+                        'B21 CBD',
+                        'B22 Spent Trim (THC)',
+                        'ACDC x Bubster #14 Male',
+                        'ACDC x Bubster #47 Male',
+                        'Blue Dog #19 Male',
+                        'Blue Dog #31 Male',
+                        'Canna-Tsu #16 Male',
+                        'Canna-Tsu #19 Male',
+                        'Foo Dog #3 Male',
+                        'Foo Dog #11 Male',
+                        'Foo Dog #12 Male',
+                        'Harle-Tsu #2 Male',
+                        'Harle-Tsu #7 Male',
+                        'Miami Blues #24',
+                        'Swiss Gold #6 Male',
+                        'Swiss Gold #18 Male',
+                        'Swiss Gold #26 Male',
+                        'Under Foo #8 Male',
+                        'Under Foo #11 Male',
+                        'Under Foo #27 Male',
+                        'Under Foo #35 Male',
+                        'Harle-Tsu #7Male'])
 
 # broke here first time thru
-# startrow = flow_df[flow_df['name'] == 'Critical Cure'].index[0]
-# df_remain = flow_df.iloc[:, startrow:]
+startrow = flow_df[flow_df['name'] == 'Mango Haze'].index[0]
+df_remain = flow_df.iloc[startrow:, :]
 
 cannabinoids = []
 terpenes = []
 im_sources = []
-for r in flow_df.iterrows():
+no_imgs = []
+names = []
+for r in df_remain.iterrows():
     i = r[0]
     r = r[1]
     link = r['link']
-    if link in black_list or r['name'] in name_black_list:
+    if link in black_list or r['name'] in name_black_list or re.search('.*\smale.*', r['name'], re.IGNORECASE) is not None or re.search('.*spent\s+trim.*', r['name'], re.IGNORECASE) is not None:
         continue
 
+    names.append(r['name'])
     driver.get(link)
     print link
     try:
         img = driver.find_element_by_xpath('//*[@id="mainwrapper"]/div[4]/div[1]/div[5]/div/div[1]/img[1]')
+        src = img.get_attribute('src')
+        im_sources.append(src)
+        print src
     except:
         no_imgs.append(r)
 
@@ -214,9 +245,6 @@ for r in flow_df.iterrows():
     table2rows = [l.get_text() for l in table1soup.findAll('li')]
     terpenes.append(table2rows)
 
-    src = img.get_attribute('src')
-    im_sources.append(src)
-    print src
     clean_name = re.sub('/', '-', r['name'])
     save_path = base_im_path + clean_name
     if os.path.exists(save_path):
@@ -226,6 +254,15 @@ for r in flow_df.iterrows():
     print save_path
 
     download_image(src, save_path, headers, cooks)
+
+pk.dump(cannabinoids, open('cannabinoids.pk', 'w'), 2)
+pk.dump(terpenes, open('terpenes.pk', 'w'), 2)
+pk.dump(no_imgs, open('no_imgs.pk', 'w'), 2)
+pk.dump(im_sources, open('im_sources.pk', 'w'), 2)
+pk.dump(names, open('names.pk', 'w'), 2)
+
+testdf = pd.DataFrame({'name':names})
+testdf['name'].value_counts()[testdf['name'].value_counts() > 1]
 
 # for finding the images on the page with 'uploads' in the path
 # uploads = []

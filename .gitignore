@@ -1,5 +1,5 @@
-*.png
-*.jpg
+analytical360/*.png
+analytical360/*.jpg
 *.model
 *.pk
 *.csv
