@@ -1,3 +1,5 @@
+import leafly.data_preprocess as dp
+import re
 import spacy
 import numpy as np
 import re
@@ -6,9 +8,19 @@ from nltk.stem import WordNetLemmatizer
 from nltk.corpus import stopwords
 from sklearn.feature_extraction.stop_words import ENGLISH_STOP_WORDS
 from sklearn.feature_extraction.text import TfidfVectorizer
+from spacy.en import English
+import pickle as pk
+
+parser = English()
 
 np.random.seed(42)
 
+# actually from the graphlab_production.py file, but can't import due to
+# circular importing...
+def load_group_dfs(prod_group_dfs_filename='prod_group_dfs.pk', user_group_dfs_filename='user_group_dfs.pk'):
+    prod_group_dfs = pk.load(open(prod_group_dfs_filename))
+    user_group_dfs = pk.load(open(user_group_dfs_filename))
+    return prod_group_dfs, user_group_dfs
 
 def print_fine_pos(token):
     return (token.tag_)
@@ -139,7 +151,7 @@ def get_top_words(df, num_words='all'):
     return vect_words[sort_idxs][:num_words], avg_vects[sort_idxs][:num_words]
 
 
-def get_top_words_lemmatize(df, num_words='all', ngram_range=(1, 1)):
+def get_top_words_lemmatize(df, num_words='all', ngram_range=(1, 1), max_df=0.75):
     '''
     gets top words from tfidf vectorization of reviews in dataframe df
     lemmatizes using
@@ -159,7 +171,7 @@ def get_top_words_lemmatize(df, num_words='all', ngram_range=(1, 1)):
     reviews = [re.sub('\d*', '', r) for r in reviews]
 
     tfvect = TfidfVectorizer(
-        stop_words=stops, max_df=0.75, min_df=5, ngram_range=ngram_range)
+        stop_words=stops, max_df=max_df, min_df=5, ngram_range=ngram_range)
     review_vects = tfvect.fit_transform(reviews)
     vect_words = np.array(tfvect.get_feature_names())
     review_vects = review_vects.toarray()
@@ -195,6 +207,34 @@ def get_top_words_lemmatize(df, num_words='all', ngram_range=(1, 1)):
          u'wa': 20})
     '''
 
+def lemmatize_tfidf(df, ngram_range=(1, 1), max_df=0.75):
+    '''
+    gets top words from tfidf vectorization of reviews in dataframe df
+    lemmatizes using
+
+    input:
+    df -- dataframe with 'review' column
+    num_words -- number of top words to return (ranked by tfidf)
+
+    output:
+    list of top words ranked in order
+    '''
+    lemmatizer = WordNetLemmatizer()
+    stops = get_stopwords()
+    reviews = df['review'].map(lambda x: ' '.join(
+        [lemmatizer.lemmatize(w) for w in x.split()])).values
+    reviews = [s.encode('ascii', errors='ignore') for s in reviews]
+    reviews = [re.sub('\d*', '', r) for r in reviews]
+
+    tfvect = TfidfVectorizer(
+        stop_words=stops, max_df=max_df, min_df=5, ngram_range=ngram_range)
+    review_vects = tfvect.fit_transform(reviews)
+    vect_words = np.array(tfvect.get_feature_names())
+    review_vects = review_vects.toarray()
+    avg_vects = review_vects.mean(axis=0)
+    sort_idxs = np.array(np.argsort(avg_vects))[::-1]
+
+    return tfvect, vect_words, review_vects
 
 def get_top_bigrams(df, num_words='all'):
     '''
@@ -360,3 +400,41 @@ def check_word_choices_in_topwords(word_dict, prod_top_words):
     returns list of words not in the top_words, but in the word_dict
     '''
     pass
+
+def get_sents_with_sleep(df):
+    '''
+    takes dataframe with reviews and product names and returns dataframe with
+    sentence with sleep appended
+    '''
+    # first ensure that our indices aren't going to screw things up
+    new_df = df.copy()
+    new_df = new_df.reset_index(drop=True)
+    new_df['sleep_sentence'] = [[] for i in range(new_df.shape[0])]
+    new_df['sent_count'] = 0
+    punct_no_per = re.sub('\.', '', string.punctuation)
+    for i, r in new_df.iterrows():
+        print i, new_df.shape[0]
+        sentences = []
+        scount = 0
+        sents = list(parser(r['review']).sents)
+        for s in sents:
+            s = s.string.strip()
+            res = re.search('.*sleep.*', s, re.IGNORECASE)
+            if res:
+                sentences.append(res.group(0))
+                scount += 1
+
+        new_df.set_value(i, 'sleep_sentence', sentences)
+        new_df.set_value(i, 'sent_count', scount)
+
+    return new_df
+
+
+if __name__=="__main__":
+    prod_group_dfs, user_group_dfs = load_group_dfs()
+    df = dp.load_data()
+    sent_df = get_sents_with_sleep(df)
+    sent_df.to_csv('leafly/sleep_sentence_df.csv')
+    #
+    # prod_group_sleep_dfs = {}
+    # test_w_sent = test[test['sent_count'] > 0]
