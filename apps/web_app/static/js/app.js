@@ -1,4 +1,4 @@
-var post_main_addr = 'http://cannadvise.me' //'http://35.161.235.42:10001'; // address with flask api 'http://0.0.0.0:10001' //
+var post_main_addr = 'http://0.0.0.0:10001' //'http://cannadvise.me' //'http://35.161.235.42:10001'; // address with flask api
 
 function add_to_bag(word, i, rec) {
   var index = chosen_words.indexOf(word);
@@ -35,6 +35,19 @@ function add_to_bag(word, i, rec) {
       }
     });
   });
+  $('#empty_bag').click(function() {
+      chosen_words = [];
+      empty_bag();
+  });
+}
+
+function empty_bag() {
+  $('.bag_words').each(function(i, v) {
+    $(v).remove();
+  });
+  $('.list-group-item').each(function(i, v) {
+    $(this).removeClass('active');
+  })
 }
 
 function remove_from_bag(word) {
@@ -43,6 +56,18 @@ function remove_from_bag(word) {
       $(v).remove();
     }
   });
+}
+
+function fit_bag() {
+  var maxW = $(window).width();
+  //$('#bag_im').css('width', maxW*0.9);
+  console.log('resizing bag');
+  $(chosen_words).each(function(i, v) {
+    console.log(v);
+    add_to_bag(v, i, rec=true);
+  });
+  // resize table in bag
+  $('ul.bag').attr('top', $('#bag_im').height()*0.2);
 }
 
 function load_main() {
@@ -80,13 +105,8 @@ function load_main() {
                     recommend(chosen_words);
                     $('#bag_im').ready(function() {
                       // fit im width to screen (for mobile)
-                      var maxW = $(window).width();
-                      $('#bag_im').css('width', maxW*0.9);
                       console.log('bag ready');
-                      $(chosen_words).each(function(i, v) {
-                        console.log(v);
-                        add_to_bag(v, i, rec=true);
-                      });
+                      fit_bag();
                     });
                 });
             });
@@ -95,19 +115,21 @@ function load_main() {
         $('#bag_im').ready(function() {
           // fit im width to screen (for mobile)
           var maxW = $(window).width();
-          $('#bag_im').css('width', maxW*0.9);
+          //$('#bag_im').css('width', maxW*0.9);
           console.log('bag ready');
           $(chosen_words).each(function(i, v) {
             console.log(v);
-            add_to_bag(v, i);
+            add_to_bag(v, i, true);
           });
+          // scale table
+          $('ul.bag').attr('top', $('#bag_im').height()*0.2);
         });
 
     }).hide().fadeIn(); // fade in the content
 }
 
 window.onload = load_main();
-//window.onresize = ;
+window.onresize = fit_bag();
 
 // http://stackoverflow.com/questions/6630772/javascript-pop-from-object
 var ObjectStack = function(obj) {
@@ -226,6 +248,7 @@ $.ajaxSetup({
 // navigation actions
 
 $('#home').click(function() {
+    chosen_words = [];
     load_main();
 });
 
