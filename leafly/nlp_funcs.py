@@ -207,7 +207,7 @@ def get_top_words_lemmatize(df, num_words='all', ngram_range=(1, 1), max_df=0.75
          u'wa': 20})
     '''
 
-def lemmatize_tfidf(df, ngram_range=(1, 1), max_df=0.75):
+def lemmatize_tfidf(df, ngram_range=(1, 1), max_df=0.75, stops='all'):
     '''
     gets top words from tfidf vectorization of reviews in dataframe df
     lemmatizes using
@@ -220,7 +220,11 @@ def lemmatize_tfidf(df, ngram_range=(1, 1), max_df=0.75):
     list of top words ranked in order
     '''
     lemmatizer = WordNetLemmatizer()
-    stops = get_stopwords()
+    if stops=='all':
+        stops = get_stopwords()
+    elif stops=='english':
+        stops = stopwords.words('english')
+
     reviews = df['review'].map(lambda x: ' '.join(
         [lemmatizer.lemmatize(w) for w in x.split()])).values
     reviews = [s.encode('ascii', errors='ignore') for s in reviews]

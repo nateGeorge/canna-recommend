@@ -49,44 +49,46 @@ def get_top_strains(df, word='pain', plot=False):
 
     return vect_words, review_vects, max_pain_sort
 
-df, prod_review_df = load_data()
 
-clean_leafly_names = []
-for n in prod_review_df['product']:
-    clean_leafly_names.append(re.sub('[ + ' + string.punctuation + '\s]+', '', n).lower())
+if __name__ == "__main__":
+    df, prod_review_df = load_data()
 
-prod_review_df['clean_name'] = clean_leafly_names
+    clean_leafly_names = []
+    for n in prod_review_df['product']:
+        clean_leafly_names.append(re.sub('[ + ' + string.punctuation + '\s]+', '', n).lower())
 
-leafly_name_set = set(clean_leafly_names)
+    prod_review_df['clean_name'] = clean_leafly_names
 
-cannabinoids, terpenes, no_imgs, im_sources, names = sc3.load_raw_scrape()
+    leafly_name_set = set(clean_leafly_names)
 
-#standardize names for comparing whats in analytical360 and whats from leafly
-clean_360_names = []
-for n in names:
-    clean_360_names.append(re.sub('[ + ' + string.punctuation + '\s]+', '', n).lower())
+    cannabinoids, terpenes, no_imgs, im_sources, names = sc3.load_raw_scrape()
 
-a360_name_set = set(clean_360_names)
+    #standardize names for comparing whats in analytical360 and whats from leafly
+    clean_360_names = []
+    for n in names:
+        clean_360_names.append(re.sub('[ + ' + string.punctuation + '\s]+', '', n).lower())
 
-exact_matches = leafly_name_set.intersection(a360_name_set)
+    a360_name_set = set(clean_360_names)
 
-match_df = prod_review_df[prod_review_df['clean_name'].isin(exact_matches)]
+    exact_matches = leafly_name_set.intersection(a360_name_set)
 
-key_terms = ['pain', 'anxiety', 'sleep', 'depression']
-vect_words, review_vects, max_pain_sort = [], [], []
-for k in key_terms:
-    v, r, m = get_top_strains(match_df, word=k)
-    vect_words.append(v)
-    review_vects.append(r)
-    max_pain_sort.append(m)
+    match_df = prod_review_df[prod_review_df['clean_name'].isin(exact_matches)]
+
+    key_terms = ['pain', 'anxiety', 'sleep', 'depression']
+    vect_words, review_vects, max_pain_sort = [], [], []
+    for k in key_terms:
+        v, r, m = get_top_strains(match_df, word=k)
+        vect_words.append(v)
+        review_vects.append(r)
+        max_pain_sort.append(m)
 
 
-# was going to filter products by which have been tested,
-# but just do the get_top_strains on a pre-filtered DF
-# topNames = prod_review_df['clean_name'].iloc[max_pain_sort]
-# topNamesChem = topNames.copy()
-# keepNames = []
-# for n in topNames.iterrows():
-#     name = n['clean_name']
-#     if name in exact_matches:
-#         keepNames.append()
+    # was going to filter products by which have been tested,
+    # but just do the get_top_strains on a pre-filtered DF
+    # topNames = prod_review_df['clean_name'].iloc[max_pain_sort]
+    # topNamesChem = topNames.copy()
+    # keepNames = []
+    # for n in topNames.iterrows():
+    #     name = n['clean_name']
+    #     if name in exact_matches:
+    #         keepNames.append()
