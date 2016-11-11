@@ -9,8 +9,6 @@ import re
 import os
 import cPickle as pk
 
-ua = UserAgent()
-
 def setup_driver():
     dcap = dict(DesiredCapabilities.PHANTOMJS)
     dcap["phantomjs.page.settings.userAgent"] = (ua.random)
@@ -151,24 +149,6 @@ def get_flower_df(rows):
     flow_df = flow_df.drop_duplicates()
 
     return flow_df
-
-# attempt using selenium
-# driver = setup_driver()
-# driver.get('http://analytical360.com/testresults')
-# links = get_links_selenium(driver)
-
-# using requests: finding it hard to get all the correct entries
-MAIN_URL = 'http://analytical360.com/testresults'
-res = requests.get(MAIN_URL)
-soup = bs(res.content, 'lxml')
-rows = check_rows(res)
-
-flow_df = get_flower_df(rows)
-# must be some javascript to load the image...
-# requests doesn't find it
-# res1 = requests.get(flower_links[0])
-# fsoup = bs(res1.content, 'lxml')
-# ims = fsoup.findAll('img')#, {'class':'szg-main-photo szg-show'})
 
 def scrape_site():
     driver = setup_driver()
@@ -346,6 +326,25 @@ def stuff():
     testdf = pd.DataFrame({'name':names})
     testdf['name'].value_counts()[testdf['name'].value_counts() > 1]
 
+if __name__ == "__main__":
+    ua = UserAgent()
+    # attempt using selenium
+    # driver = setup_driver()
+    # driver.get('http://analytical360.com/testresults')
+    # links = get_links_selenium(driver)
+
+    # using requests: finding it hard to get all the correct entries
+    MAIN_URL = 'http://analytical360.com/testresults'
+    res = requests.get(MAIN_URL)
+    soup = bs(res.content, 'lxml')
+    rows = check_rows(res)
+
+    flow_df = get_flower_df(rows)
+    # must be some javascript to load the image...
+    # requests doesn't find it
+    # res1 = requests.get(flower_links[0])
+    # fsoup = bs(res1.content, 'lxml')
+    # ims = fsoup.findAll('img')#, {'class':'szg-main-photo szg-show'})
 # for finding the images on the page with 'uploads' in the path
 # uploads = []
 # for i in ims:
