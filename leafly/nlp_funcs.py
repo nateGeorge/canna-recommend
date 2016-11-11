@@ -207,7 +207,7 @@ def get_top_words_lemmatize(df, num_words='all', ngram_range=(1, 1), max_df=0.75
          u'wa': 20})
     '''
 
-def lemmatize_tfidf(df, ngram_range=(1, 1), max_df=0.75, stops='all'):
+def lemmatize_tfidf(df, ngram_range=(1, 1), max_df=0.75, stops='all', max_features=None):
     '''
     gets top words from tfidf vectorization of reviews in dataframe df
     lemmatizes using
@@ -231,7 +231,7 @@ def lemmatize_tfidf(df, ngram_range=(1, 1), max_df=0.75, stops='all'):
     reviews = [re.sub('\d*', '', r) for r in reviews]
 
     tfvect = TfidfVectorizer(
-        stop_words=stops, max_df=max_df, min_df=5, ngram_range=ngram_range)
+        stop_words=stops, max_df=max_df, min_df=5, ngram_range=ngram_range, max_features=max_features)
     review_vects = tfvect.fit_transform(reviews)
     vect_words = np.array(tfvect.get_feature_names())
     review_vects = review_vects.toarray()
