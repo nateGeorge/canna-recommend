@@ -32,21 +32,6 @@ def get_headers_cookies(driver):
 
     return headers, cooks
 
-# using requests: finding it hard to get all the correct entries
-MAIN_URL = 'http://analytical360.com/m/archived'
-res = requests.get(MAIN_URL)
-soup = bs(res.content, 'lxml')
-num_block = soup.findAll('div', {'class':'wpapi_pagination'})
-num_pages = int(num_block[0].findAll('span')[0].text.split()[-1])
-
-last_num_pages == 3823 # last time I checked
-if num_pages != last_num_pages:
-    max_diff = num_pages - last_num_pages
-    pages_left = range(1, max_diff+1)
-    scrape_newstuff(pages_left)
-
-driver = setup_driver()
-
 def scrape_newstuff(pages_left):
     '''
     goes through each archive page, saves it, and grabs relevant links and names from it
@@ -92,4 +77,26 @@ def scrape_newstuff(pages_left):
     df = pd.DataFrame({'link':links, 'name':names})
     return df, failed
 
-df, failed = scrape_newstuff(range(1, num_pages + 1))
+
+if __name__ == "__main__":
+    # using requests: finding it hard to get all the correct entries
+    MAIN_URL = 'http://analytical360.com/m/archived'
+    res = requests.get(MAIN_URL)
+    soup = bs(res.content, 'lxml')
+    num_block = soup.findAll('div', {'class':'wpapi_pagination'})
+    num_pages = int(num_block[0].findAll('span')[0].text.split()[-1])
+
+    last_num_pages = 3823 # last time I checked
+    if num_pages != last_num_pages:
+        max_diff = num_pages - last_num_pages
+        print max_diff, 'new pages'
+        pages_left = range(1, max_diff+1)
+        # scrape_newstuff(pages_left)
+
+    #driver = setup_driver()
+    # test scraping a few pages...
+    # df, failed = scrape_newstuff(range(1, 11))
+
+    # for scraping entire archives...
+    df, failed = scrape_newstuff(range(1, num_pages + 1))
+    df.to_pickle('analytical360/archives_links_df.pk')

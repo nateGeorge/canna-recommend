@@ -1,9 +1,15 @@
-analytical360/*.png
-analytical360/*.jpg
+analytical360/*/*.png
+analytical360/*/*.jpg
+analytical360/archives_pages/*
 *.model
-*.pk
 *.csv
 *.pyc
+*.pk
+*.pdf
+*.tsv
+*.ft
+*.odp
+pill_ims/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

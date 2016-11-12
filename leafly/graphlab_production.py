@@ -12,10 +12,14 @@ import numpy as np
 import collections
 import os
 
-def load_everything(drop=True):
+def load_everything(drop=True, anon=False):
     '''
     loads the dataframe of reviews data, removes 'Anonymous' reviews
     and drops columns we don't need for the recommender engine
+
+    args:
+    drop -- whether or not to drop non-critical columns
+    anon -- whether to keep anonymous reviews or not
     '''
 
     df = dp.load_data()
@@ -24,7 +28,8 @@ def load_everything(drop=True):
         df.drop(['date', 'time', 'review'], axis=1, inplace=True)
     # remove user 'Anonymous' -- necessary to match up size of products from
     # data_preprocess get users and products func
-    df_no_anon = df[df['user'] != 'Anonymous']
+    if not anon:
+        df_no_anon = df[df['user'] != 'Anonymous']
 
     return df_no_anon
 

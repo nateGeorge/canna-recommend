@@ -14,6 +14,7 @@ from pymongo import MongoClient
 from fake_useragent import UserAgent
 import db_functions as dbfunc
 import numpy as np
+import pandas as pd
 
 delay_penalty = 1  # time to wait until starting next thread if can't scrape current one
 ua = UserAgent()
@@ -106,12 +107,15 @@ def load_strain_list():
     * otherwise scrolls through entire alphabetically-sorted strain list
     (takes a long time)
     '''
+    driver = setup_driver()
+    cooks = clear_prompts(driver)  # clears prompts and saves cookies
+
     newest = max(iglob('strain_pages_list*.pk'), key=os.path.getctime)
     if len(newest) > 0:
         # get list of strain pages
         strains = pk.load(open(newest))
         # check for newly-added strains
-        uptodate, diff = check_if_strains_uptodate(strains, STRAIN_URL)
+        uptodate, diff = check_if_strains_uptodate(strains, STRAIN_URL, cooks)
         if not uptodate:
             strains = update_strainlist(diff, strains, newest)
     else:
@@ -205,7 +209,7 @@ def scrape_strainlist(save_file, strain_url=STRAIN_URL):
     return soup
 
 
-def check_if_strains_uptodate(strains, strain_url):
+def check_if_strains_uptodate(strains, strain_url, cooks):
     '''
     scrapes leafly main page to check if any new strains have been added
 

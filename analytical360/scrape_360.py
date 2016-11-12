@@ -8,6 +8,8 @@ import numpy as np
 import re
 import os
 import cPickle as pk
+from collections import deque
+import string
 
 def setup_driver():
     dcap = dict(DesiredCapabilities.PHANTOMJS)
@@ -150,11 +152,11 @@ def get_flower_df(rows):
 
     return flow_df
 
-def scrape_site():
+def scrape_site(df):
     driver = setup_driver()
     driver.get(MAIN_URL)
     headers, cooks = get_headers_cookies(driver)
-    base_im_path = 'images/'
+    base_im_path = 'analytical360/new_images/'
     if not os.path.exists(base_im_path):
         os.mkdir(base_im_path)
     # pages that aren't really flowers, but concentrates
@@ -187,20 +189,24 @@ def scrape_site():
                             'Harle-Tsu #7Male'])
 
     # broke here first time thru
-    startrow = flow_df[flow_df['name'] == 'Mango Haze'].index[0]
-    df_remain = flow_df.iloc[startrow:, :]
+    # startrow = flow_df[flow_df['name'] == 'Mango Haze'].index[0]
+    # df_remain = flow_df.iloc[startrow:, :]
 
     cannabinoids = []
     terpenes = []
     im_sources = []
     no_imgs = []
     names = []
-    for r in df_remain.iterrows():
+    clean_names = []
+    for r in df.iterrows():
         i = r[0]
         r = r[1]
         link = r['link']
-        if link in black_list or r['name'] in name_black_list or re.search('.*\smale.*', r['name'], re.IGNORECASE) is not None or re.search('.*spent\s+trim.*', r['name'], re.IGNORECASE) is not None:
+        id = link.split('/')[-1]
+        if link in black_list or r['name'] in name_black_list or re.search('.*male.*', r['name'], re.IGNORECASE) is not None or re.search('.*raw\s*pulp.*', r['name'], re.IGNORECASE) is not None or re.search('.*spent\s+trim.*', r['name'], re.IGNORECASE) is not None:
             continue
+
+        print r['name']
 
         names.append(r['name'])
         driver.get(link)
@@ -214,7 +220,7 @@ def scrape_site():
             no_imgs.append(r)
 
         table1 = driver.find_element_by_xpath('//*[@id="mainwrapper"]/div[4]/div[1]/div[7]/div/div[1]/ul')
-        table1soup = bs(table1.get_attribute('innerHTML'))
+        table1soup = bs(table1.get_attribute('innerHTML'), 'lxml')
         table1rows = [l.get_text() for l in table1soup.findAll('li')]
         cannabinoids.append(table1rows)
         try:
@@ -222,26 +228,29 @@ def scrape_site():
         except:
             table2 = driver.find_element_by_xpath('//*[@id="mainwrapper"]/div[4]/div[1]/div[9]/div/div/ul')
 
-        table2soup = bs(table2.get_attribute('innerHTML'))
-        table2rows = [l.get_text() for l in table1soup.findAll('li')]
+        table2soup = bs(table2.get_attribute('innerHTML'), 'lxml')
+        table2rows = [l.get_text() for l in table2soup.findAll('li')]
         terpenes.append(table2rows)
 
         clean_name = re.sub('/', '-', r['name'])
-        save_path = base_im_path + clean_name
+        clean_name = re.sub('[ + ' + string.punctuation + '\s]+', '', clean_name).lower()
+        clean_names.append(clean_name)
+        save_path = base_im_path + clean_name + id + '.jpg'
         if os.path.exists(save_path):
-            save_path = save_path + i
+            print r['name'], 'already saved image'
+        else:
+            print save_path
+            download_image(src, save_path, headers, cooks)
 
-        save_path = save_path + '.jpg'
-        print save_path
+    return cannabinoids, terpenes, im_sources, no_imgs, names, clean_names
 
-        download_image(src, save_path, headers, cooks)
-
-def save_raw_scrape(cannabinoids, terpenes, no_imgs, im_sources, names):
+def save_raw_scrape(cannabinoids, terpenes, no_imgs, im_sources, names, clean_names):
     pk.dump(cannabinoids, open('analytical360/cannabinoids.pk', 'w'), 2)
     pk.dump(terpenes, open('analytical360/terpenes.pk', 'w'), 2)
     pk.dump(no_imgs, open('analytical360/no_imgs.pk', 'w'), 2)
     pk.dump(im_sources, open('analytical360/im_sources.pk', 'w'), 2)
     pk.dump(names, open('analytical360/names.pk', 'w'), 2)
+    pk.dump(clean_names, open('analytical360/clean_names.pk', 'w'), 2)
 
 def load_raw_scrape():
     cannabinoids = pk.load(open('analytical360/cannabinoids.pk'))
@@ -249,11 +258,16 @@ def load_raw_scrape():
     no_imgs = pk.load(open('analytical360/no_imgs.pk'))
     im_sources = pk.load(open('analytical360/im_sources.pk'))
     names = pk.load(open('analytical360/names.pk'))
-    return cannabinoids, terpenes, no_imgs, im_sources, names
+    clean_names = pk.load(open('analytical360/clean_names.pk'))
+    return cannabinoids, terpenes, no_imgs, im_sources, names, clean_names
 
 def parse_raw_scrape(cannabinoids, terpenes, names):
-    trail = [0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1]
-    cannabinoid_strs = ['thc-a', 'thc', 'cbn', 'thc total', 'thc-total', 'cbd-a', 'cbd', 'cbd-total', 'cbd total', 'cbg', 'cbc', 'activated total', 'activated', 'active']
+    '''
+    parses raw scrape data for cannabinoids and terpenes.  Returns dataframe
+    with
+    '''
+    trail = deque([0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1])
+    cannabinoid_strs = deque(['thc-a', 'thc', 'cbn', 'thc total', 'thc-total', 'cbd-a', 'cbd', 'cbd-total', 'cbd total', 'cbg', 'cbc', 'activated total', 'activated', 'active'])
     c_dict_keys = ['thca', 'thc', 'cbn', 'thc_total', 'cbda', 'cbd', 'cbd_total', 'cbg', 'cbc', 'activated_total']
     conversion_dict = {'thc-a':'thca',
                         'thc total':'thc_total',
@@ -264,34 +278,113 @@ def parse_raw_scrape(cannabinoids, terpenes, names):
                         'activated total':'activated_total',
                         'activated':'activated_total'} # converts similar strings to the dict key forf cannabiniod dict
     cannabinoid_dict = {}
-    for t, c in zip(trail, cannabinoid_strs):
-        has_str, num = find_str(cannabinoids, c, t)
-        if has_str:
-            pass
+    screen_tups = zip(range(len(trail)), trail, cannabinoid_strs)
+    for i, cann in enumerate(cannabinoids):
+        print i
+        temp_cann = c_dict_keys[:]
+        cannabinoid_dict.setdefault('name', []).append(names[i])
+        for ca in cann:
+            for j, t, c in screen_tups:
+                has_str, num = find_string(ca, c, t)
+                if has_str:
+                    idx = list(cannabinoid_strs).index(c)
+                    # cannabinoid_strs.rotate(-idx) # move that entry to the beginning of the list
+                    # trail.rotate(-idx)
+                    # screen_tups = zip(range(len(trail)), trail, cannabinoid_strs)
+                    print 'found', c, ca
+                    if c in conversion_dict:
+                        cannabinoid_dict.setdefault(conversion_dict[c], []).append(num)
+                        temp_cann.remove(conversion_dict[c])
+                    else:
+                        cannabinoid_dict.setdefault(c, []).append(num)
+                        temp_cann.remove(c)
+                    break
 
-        print c, np.mean(has_str)
+        if len(temp_cann) > 0:
+            print 'didn\'t scrape:', temp_cann
+            for t in temp_cann:
+                cannabinoid_dict.setdefault(c, []).append('nan')
 
 
-    thca = []
-    thc = []
-    total_thc = []
-    cbn = []
-    cbda = []
-    cbd = []
-    total_cbd = []
-    cbg = []
-    cbc = []
-    activated_total = []
+    terp_strs = deque(['beta-Pinene',
+                        'Humulene',
+                        'Limonene',
+                        'alpha-Pinene',
+                        'Caryophyllene',
+                        'Beta Pinene',
+                        'Linalool',
+                        'Caryophyllene oxide',
+                        'Myrcene',
+                        'TERPENE-TOTAL',
+                        'Terpinolene',
+                        'Ocimene',
+                        'Alpha Pinene'])
 
-def find_string(search_str, str_to_find='THC-A', trail=True):
+    t_dict_keys = ['beta_pinene',
+                'alpha_pinene',
+                'caryophyllene_oxide',
+                'Humulene',
+                'Limonene',
+                'Caryophyllene',
+                'Linalool',
+                'Myrcene',
+                'Terpinolene',
+                'Ocimene',
+                'total_terpenes']
+
+    # converts similar strings to the dict key for terp dict
+    terp_conv_dict = {'beta-Pinene':'beta_pinene',
+                        'Beta Pinene':'beta_pinene',
+                        'alpha-Pinene':'alpha_pinene',
+                        'Alpha Pinene':'alpha_pinene',
+                        'Caryophyllene oxide':'caryophyllene_oxide',
+                        'TERPENE-TOTAL':'total_terpenes'}
+    terp_dict = {}
+    for i, terp in enumerate(terpenes):
+        print i
+        temp_cann = t_dict_keys[:]
+        terp_dict.setdefault('name', []).append(names[i])
+        for ta in terp:
+            for c in terp_strs:
+                has_str, num = find_string(ta, c)
+                if has_str:
+                    idx = list(terp_strs).index(c)
+                    print 'found', c, ta
+                    if c in terp_conv_dict:
+                        terp_dict.setdefault(terp_conv_dict[c], []).append(num)
+                        temp_cann.remove(conversion_dict[c])
+                    else:
+                        terp_dict.setdefault(c, []).append(num)
+                        temp_cann.remove(c)
+                    break
+
+    if len(temp_cann) > 0:
+        print 'didn\'t scrape:', temp_cann
+        for t in temp_cann:
+            terp_dict.setdefault(c, []).append('nan')
+
+    terp_dict['names'] = names
+    cannabinoid_dict['names'] = names
+
+    cdf = pd.DataFrame(cannabinoid_dict)
+    tdf = pd.DataFrame(terp_dict)
+    total_df = cdf.merge(tdf, on='name')
+
+    return total_df
+
+def find_string(search_str, str_to_find='THC-A', trail=False):
+    if search_str.find('8-THC') != -1:
+        return 0, 0
+    if search_str.find('< 0.01 TERPENE-TOTAL') != -1:
+        return 1, 0
     if trail:
         find_str = '.*' + str_to_find + '.*'
     else:
-        find_str = '.*' + str_to_find
+        find_str = '.*' + str_to_find + '$'
     has_str = 0
-    res = re.search(find_str, j, re.IGNORECASE)
+    res = re.search(find_str, search_str, re.IGNORECASE)
     if res:
-        num = re.search('[\d\.]*').group(0)
+        num = re.search('[\d\.]*', search_str).group(0)
         return 1, num
 
     return 0, 0
@@ -326,6 +419,35 @@ def stuff():
     testdf = pd.DataFrame({'name':names})
     testdf['name'].value_counts()[testdf['name'].value_counts() > 1]
 
+
+def clean_flow_df(df, clean_names=None):
+    '''
+    converts strings with % into floats
+    '''
+    new_df = df.copy()
+    for c in ['activated', 'thc', 'cbd']:
+        new_df[c] = new_df[c].apply(lambda x: x.strip('%'))
+        new_df[c][new_df[c] == '< 0.01'] = 0
+        new_df[c] = new_df[c].astype('float64')
+
+    if clean_names is not None:
+        new_df['im_name'] = ''
+        for i, n in enumerate(clean_names):
+            new_df.set_value(i, 'im_name', n + df.iloc[i]['link'].split('/')[-1] + '.jpg')
+
+    return new_df
+
+import leafly.data_preprocess as dp
+
+def clean_a_name(name_str):
+    clean_name = re.sub('/', '-', name_str)
+    clean_name = re.sub('[ + ' + string.punctuation + '\s]+', '', clean_name).lower()
+    return clean_name
+
+def match_up_leafly_names(df):
+    leafly_df = dp.load_data()
+    leafly_df['clean_name'] = leafly_df['product'].apply(clean_a_name)
+
 if __name__ == "__main__":
     ua = UserAgent()
     # attempt using selenium
@@ -334,12 +456,20 @@ if __name__ == "__main__":
     # links = get_links_selenium(driver)
 
     # using requests: finding it hard to get all the correct entries
-    MAIN_URL = 'http://analytical360.com/testresults'
-    res = requests.get(MAIN_URL)
-    soup = bs(res.content, 'lxml')
-    rows = check_rows(res)
+    scrape_full_site = False
+    if scrape_full_site:
+        MAIN_URL = 'http://analytical360.com/testresults'
+        res = requests.get(MAIN_URL)
+        soup = bs(res.content, 'lxml')
+        rows = check_rows(res)
 
-    flow_df = get_flower_df(rows)
+        flow_df = get_flower_df(rows)
+        flow_df.to_pickle('analytical360/flow_df.pk')
+        cannabinoids, terpenes, im_sources, no_imgs, names, clean_names = scrape_site(flow_df)
+        save_raw_scrape(cannabinoids, terpenes, no_imgs, im_sources, names, clean_names)
+    else:
+        flow_df = pd.read_pickle('analytical360/flow_df.pk')
+        cannabinoids, terpenes, im_sources, no_imgs, names, clean_names = load_raw_scrape()
     # must be some javascript to load the image...
     # requests doesn't find it
     # res1 = requests.get(flower_links[0])

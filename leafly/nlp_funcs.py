@@ -210,7 +210,7 @@ def get_top_words_lemmatize(df, num_words='all', ngram_range=(1, 1), max_df=0.75
 def lemmatize_tfidf(df, ngram_range=(1, 1), max_df=0.75, stops='all', max_features=None):
     '''
     gets top words from tfidf vectorization of reviews in dataframe df
-    lemmatizes using
+    lemmatizes
 
     input:
     df -- dataframe with 'review' column
