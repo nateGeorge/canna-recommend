@@ -431,22 +431,48 @@ def clean_flow_df(df, clean_names=None):
         new_df[c] = new_df[c].astype('float64')
 
     if clean_names is not None:
-        new_df['im_name'] = ''
-        for i, n in enumerate(clean_names):
-            new_df.set_value(i, 'im_name', n + df.iloc[i]['link'].split('/')[-1] + '.jpg')
+        new_df['clean_name'] = new_df['name'].apply(clean_a_name)
+        new_df['im_name'] = [x['clean_name'] + x['link'].split('/')[-1] + '.jpg' for i, x in new_df.iterrows()]
+        #for i, n in enumerate(clean_names):
+        #     new_df.set_value(i, 'im_name', n + df.iloc[i]['link'].split('/')[-1] + '.jpg')
 
     return new_df
 
 import leafly.data_preprocess as dp
+import leafly.scrape_leafly as sl
 
 def clean_a_name(name_str):
     clean_name = re.sub('/', '-', name_str)
     clean_name = re.sub('[ + ' + string.punctuation + '\s]+', '', clean_name).lower()
     return clean_name
 
-def match_up_leafly_names(df):
-    leafly_df = dp.load_data()
-    leafly_df['clean_name'] = leafly_df['product'].apply(clean_a_name)
+def match_up_leafly_names(flow_df):
+    ''' checks how many names roughly match in the leafly database and
+    analytical360 db
+    '''
+    clean_flow = clean_flow_df(flow_df)
+    strains = sl.load_strain_list()
+    strain_clean_names = [clean_a_name(n.split('/')[-1]) for n in strains]
+    flow_nameset = set(clean_flow['clean_name'])
+    matches = []
+    # translation from some leafly strain names to specific analytical360 names
+    trans_dict = {'k1':'kk1',
+                    'j1':'j1ridgewayg'}
+    for s in strain_clean_names:
+        # these names match too much, so we need to look for exact matches for now
+        if s in ['ash', 'haze', 'thai', 'wsu', 'goo', 'or', 'ogkush', 'goat', 'flo', 'fireog', 'bsc', 'b4']:
+            if f == s:
+                matches.append((s, f))
+            continue # for now skip, since is matching sourbananasherbert, etc
+        for f in flow_nameset:
+            if f.find(s) != -1 and f.find(s + 'x') == -1:
+                matches.append((s, f))
+
+    retern matches
+
+
+    # leafly_df = dp.load_data()
+    # leafly_df['clean_name'] = leafly_df['product'].apply(clean_a_name)
 
 if __name__ == "__main__":
     ua = UserAgent()
@@ -470,6 +496,7 @@ if __name__ == "__main__":
     else:
         flow_df = pd.read_pickle('analytical360/flow_df.pk')
         cannabinoids, terpenes, im_sources, no_imgs, names, clean_names = load_raw_scrape()
+        clean_flow = clean_flow_df(flow_df, clean_names)
     # must be some javascript to load the image...
     # requests doesn't find it
     # res1 = requests.get(flower_links[0])
