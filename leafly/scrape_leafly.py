@@ -19,9 +19,9 @@ import pandas as pd
 delay_penalty = 1  # time to wait until starting next thread if can't scrape current one
 ua = UserAgent()
 
-STRAIN_PAGE_FILE = 'leafly_alphabetic_strains_page_' + \
+STRAIN_PAGE_FILE = 'leafly/leafly_alphabetic_strains_page_' + \
     datetime.utcnow().isoformat()[:10] + '.pk'
-NEW_STRAIN_PAGE_FILE = 'leafly_newest_strains_page_' + \
+NEW_STRAIN_PAGE_FILE = 'leafly/leafly_newest_strains_page_' + \
     datetime.utcnow().isoformat()[:10] + '.pk'
 BASE_URL = 'https://www.leafly.com'
 STRAIN_URL = BASE_URL + '/explore/sort-alpha'
@@ -99,7 +99,7 @@ def load_current_strains(correct_names=False):
     return strains
 
 
-def load_strain_list():
+def load_strain_list(check=False):
     '''
     * checks for latest strain list file and loads it if it's there
     * if there, checks to make sure strain list is up to date and updates
@@ -110,14 +110,15 @@ def load_strain_list():
     driver = setup_driver()
     cooks = clear_prompts(driver)  # clears prompts and saves cookies
 
-    newest = max(iglob('strain_pages_list*.pk'), key=os.path.getctime)
+    newest = max(iglob('leafly/strain_pages_list*.pk'), key=os.path.getctime)
     if len(newest) > 0:
         # get list of strain pages
         strains = pk.load(open(newest))
         # check for newly-added strains
-        uptodate, diff = check_if_strains_uptodate(strains, STRAIN_URL, cooks)
-        if not uptodate:
-            strains = update_strainlist(diff, strains, newest)
+        if check:
+            uptodate, diff = check_if_strains_uptodate(strains, STRAIN_URL, cooks)
+            if not uptodate:
+                strains = update_strainlist(diff, strains, newest)
     else:
         strain_soup = scrape_strainlist(STRAIN_PAGE_FILE, STRAIN_URL)
         strains = get_strains(strain_soup, update_pk=True)
@@ -129,9 +130,10 @@ def update_strainlist(diff, strains, strain_file):
     '''
     checks leafly's recently added strains and adds to strain list
     '''
+    strains = [s.lower() for s in strains]
     strains = sorted(list(set(strains) | diff))
     # save strainlist with todays date in filename
-    strain_pages_file = 'strain_pages_list' + \
+    strain_pages_file = 'leafly/strain_pages_list' + \
         datetime.now().isoformat()[:10] + '.pk'
     pk.dump(strains, open(strain_pages_file, 'w'), 2)
 
@@ -235,7 +237,7 @@ def check_if_strains_uptodate(strains, strain_url, cooks):
     strain_set = set(strains)
     # check if more duplicates than just chocolate-kush (which has been
     # handled)
-    coll_names = [s.split('/')[-1] for s in strains]
+    coll_names = [s.split('/')[-1] for s in strain_set | new_strains]
     if len(coll_names) - len(set(coll_names)) > 1:
         df = pd.DataFrame(coll_names)
         vc = df[0].value_counts()
