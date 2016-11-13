@@ -26,6 +26,18 @@ If you get an error, you may need to up the ulimit: http://stackoverflow.com/que
 Make sure to run all scripts from the main directory of the project (canna-recommend).  E.g. python2 apps/web_app/app.py
 This is due to relative imports in the script, which I standardized by expecting the script to be run from the home dir.
 
+# Scraping analytical360
+To scrape this site, I created a postgresql database (`CREATE DATABASE arch360;` from within psql),
+then created some tables:
+
+```bash
+psql arch360
+```
+
+```sql
+
+```
+
 # Spinning up AWS, etc
 You might have to run `sudo service mongod start` after starting the instance.  Check to make sure mongo is working with `service mongo status`.
 
