@@ -10,6 +10,12 @@ import os
 import cPickle as pk
 from collections import deque
 import string
+import time
+import psycopg2 as pg
+from pymongo import MongoClient
+
+ua = UserAgent()
+MAIN_URL = 'http://analytical360.com/testresults'
 
 def setup_driver():
     dcap = dict(DesiredCapabilities.PHANTOMJS)
@@ -152,11 +158,24 @@ def get_flower_df(rows):
 
     return flow_df
 
-def scrape_site(df):
+def scrape_site(df, base_im_path='analytical360/new_images/', delay=None, sql=None, mongo=None):
+    '''
+    goes through analytical360 site and scrapes images and data
+    sql can be set to the name of a sql database to save info to, so the process can be stopped part way through
+    '''
+    if sql is not None:
+        # didn't get this working...couldn't figure out lists in sql
+        dbname=sql
+        conn = psycopg2.connect("dbname=" + sql + " host='localhost'")
+
+    if mongo is not None:
+        client = MongoClient()
+        db = client[mongo[0]]
+        coll = db[mongo[1]]
+
     driver = setup_driver()
     driver.get(MAIN_URL)
     headers, cooks = get_headers_cookies(driver)
-    base_im_path = 'analytical360/new_images/'
     if not os.path.exists(base_im_path):
         os.mkdir(base_im_path)
     # pages that aren't really flowers, but concentrates
@@ -198,12 +217,21 @@ def scrape_site(df):
     no_imgs = []
     names = []
     clean_names = []
-    for r in df.iterrows():
-        i = r[0]
-        r = r[1]
+    for i, r in df.iterrows():
+        if delay is not None:
+            time.sleep(delay)
+
         link = r['link']
         id = link.split('/')[-1]
         if link in black_list or r['name'] in name_black_list or re.search('.*male.*', r['name'], re.IGNORECASE) is not None or re.search('.*raw\s*pulp.*', r['name'], re.IGNORECASE) is not None or re.search('.*spent\s+trim.*', r['name'], re.IGNORECASE) is not None:
+            continue
+
+        clean_name = re.sub('/', '-', r['name'])
+        clean_name = re.sub('[ + ' + string.punctuation + '\s]+', '', clean_name).lower()
+        clean_names.append(clean_name)
+        save_path = base_im_path + clean_name + id + '.jpg'
+        if mongo is not None and coll.find({'link':link}).count() != 0:
+            print 'already processed', r['name']
             continue
 
         print r['name']
@@ -218,10 +246,15 @@ def scrape_site(df):
             print src
         except:
             no_imgs.append(r)
+            src = ''
 
         table1 = driver.find_element_by_xpath('//*[@id="mainwrapper"]/div[4]/div[1]/div[7]/div/div[1]/ul')
         table1soup = bs(table1.get_attribute('innerHTML'), 'lxml')
         table1rows = [l.get_text() for l in table1soup.findAll('li')]
+        isedible = False
+        if re.search('serving\s*size', table1rows[0], re.IGNORECASE) is not None:
+            isedible = True
+
         cannabinoids.append(table1rows)
         try:
             table2 = driver.find_element_by_xpath('//*[@id="mainwrapper"]/div[4]/div[1]/div[8]/div/div/ul')
@@ -232,33 +265,59 @@ def scrape_site(df):
         table2rows = [l.get_text() for l in table2soup.findAll('li')]
         terpenes.append(table2rows)
 
-        clean_name = re.sub('/', '-', r['name'])
-        clean_name = re.sub('[ + ' + string.punctuation + '\s]+', '', clean_name).lower()
-        clean_names.append(clean_name)
-        save_path = base_im_path + clean_name + id + '.jpg'
         if os.path.exists(save_path):
             print r['name'], 'already saved image'
         else:
             print save_path
-            download_image(src, save_path, headers, cooks)
+            if not isedible:
+                download_image(src, save_path, headers, cooks)
+
+        coll.insert_one(
+            {'cannabinoids': table1rows,
+            'terpenes': table2rows,
+            'clean_name': clean_name,
+            'link':link,
+            'im_source':src,
+            'isedible':isedible,
+            'save_path':save_path,
+            'name': r['name']})
+
+    client.close()
 
     return cannabinoids, terpenes, im_sources, no_imgs, names, clean_names
 
-def save_raw_scrape(cannabinoids, terpenes, no_imgs, im_sources, names, clean_names):
-    pk.dump(cannabinoids, open('analytical360/cannabinoids.pk', 'w'), 2)
-    pk.dump(terpenes, open('analytical360/terpenes.pk', 'w'), 2)
-    pk.dump(no_imgs, open('analytical360/no_imgs.pk', 'w'), 2)
-    pk.dump(im_sources, open('analytical360/im_sources.pk', 'w'), 2)
-    pk.dump(names, open('analytical360/names.pk', 'w'), 2)
-    pk.dump(clean_names, open('analytical360/clean_names.pk', 'w'), 2)
+def save_raw_scrape(cannabinoids, terpenes, no_imgs, im_sources, names, clean_names, prefix=None):
+    if prefix is None:
+        pk.dump(cannabinoids, open('analytical360/cannabinoids.pk', 'w'), 2)
+        pk.dump(terpenes, open('analytical360/terpenes.pk', 'w'), 2)
+        pk.dump(no_imgs, open('analytical360/no_imgs.pk', 'w'), 2)
+        pk.dump(im_sources, open('analytical360/im_sources.pk', 'w'), 2)
+        pk.dump(names, open('analytical360/names.pk', 'w'), 2)
+        pk.dump(clean_names, open('analytical360/clean_names.pk', 'w'), 2)
+    else:
+        pk.dump(cannabinoids, open('analytical360/' + prefix + 'cannabinoids.pk', 'w'), 2)
+        pk.dump(terpenes, open('analytical360/' + prefix + 'terpenes.pk', 'w'), 2)
+        pk.dump(no_imgs, open('analytical360/' + prefix + 'no_imgs.pk', 'w'), 2)
+        pk.dump(im_sources, open('analytical360/' + prefix + 'im_sources.pk', 'w'), 2)
+        pk.dump(names, open('analytical360/' + prefix + 'names.pk', 'w'), 2)
+        pk.dump(clean_names, open('analytical360/' + prefix + 'clean_names.pk', 'w'), 2)
 
-def load_raw_scrape():
-    cannabinoids = pk.load(open('analytical360/cannabinoids.pk'))
-    terpenes = pk.load(open('analytical360/terpenes.pk'))
-    no_imgs = pk.load(open('analytical360/no_imgs.pk'))
-    im_sources = pk.load(open('analytical360/im_sources.pk'))
-    names = pk.load(open('analytical360/names.pk'))
-    clean_names = pk.load(open('analytical360/clean_names.pk'))
+def load_raw_scrape(prefix=None):
+    if prefix is None:
+        cannabinoids = pk.load(open('analytical360/cannabinoids.pk'))
+        terpenes = pk.load(open('analytical360/terpenes.pk'))
+        no_imgs = pk.load(open('analytical360/no_imgs.pk'))
+        im_sources = pk.load(open('analytical360/im_sources.pk'))
+        names = pk.load(open('analytical360/names.pk'))
+        clean_names = pk.load(open('analytical360/clean_names.pk'))
+    else:
+        cannabinoids = pk.load(open('analytical360/' + prefix + 'cannabinoids.pk'))
+        terpenes = pk.load(open('analytical360/' + prefix + 'terpenes.pk'))
+        no_imgs = pk.load(open('analytical360/' + prefix + 'no_imgs.pk'))
+        im_sources = pk.load(open('analytical360/' + prefix + 'im_sources.pk'))
+        names = pk.load(open('analytical360/' + prefix + 'names.pk'))
+        clean_names = pk.load(open('analytical360/' + prefix + 'clean_names.pk'))
+
     return cannabinoids, terpenes, no_imgs, im_sources, names, clean_names
 
 def parse_raw_scrape(cannabinoids, terpenes, names):
@@ -446,14 +505,16 @@ def clean_a_name(name_str):
     clean_name = re.sub('[ + ' + string.punctuation + '\s]+', '', clean_name).lower()
     return clean_name
 
-def match_up_leafly_names(flow_df):
+def match_up_leafly_names(nameset):
     ''' checks how many names roughly match in the leafly database and
     analytical360 db
+
+    agrs: nameset -- set of names found from analytical360 to match with
+    leafly strain names
     '''
-    clean_flow = clean_flow_df(flow_df)
     strains = sl.load_strain_list()
     strain_clean_names = [clean_a_name(n.split('/')[-1]) for n in strains]
-    flow_nameset = set(clean_flow['clean_name'])
+
     matches = []
     # translation from some leafly strain names to specific analytical360 names
     trans_dict = {'k1':'kk1',
@@ -461,21 +522,23 @@ def match_up_leafly_names(flow_df):
     for s in strain_clean_names:
         # these names match too much, so we need to look for exact matches for now
         if s in ['ash', 'haze', 'thai', 'wsu', 'goo', 'or', 'ogkush', 'goat', 'flo', 'fireog', 'bsc', 'b4']:
-            if f == s:
-                matches.append((s, f))
-            continue # for now skip, since is matching sourbananasherbert, etc
-        for f in flow_nameset:
+            for f in nameset:
+                if f == s:
+                    matches.append((s, f))
+                    break # don't need to look through the rest
+                    # of the nameset if this is true
+                continue # for now skip, since is matching sourbananasherbert, etc
+        for f in nameset:
             if f.find(s) != -1 and f.find(s + 'x') == -1:
                 matches.append((s, f))
 
-    retern matches
+    return matches
 
 
     # leafly_df = dp.load_data()
     # leafly_df['clean_name'] = leafly_df['product'].apply(clean_a_name)
 
 if __name__ == "__main__":
-    ua = UserAgent()
     # attempt using selenium
     # driver = setup_driver()
     # driver.get('http://analytical360.com/testresults')
@@ -484,7 +547,6 @@ if __name__ == "__main__":
     # using requests: finding it hard to get all the correct entries
     scrape_full_site = False
     if scrape_full_site:
-        MAIN_URL = 'http://analytical360.com/testresults'
         res = requests.get(MAIN_URL)
         soup = bs(res.content, 'lxml')
         rows = check_rows(res)
@@ -497,6 +559,10 @@ if __name__ == "__main__":
         flow_df = pd.read_pickle('analytical360/flow_df.pk')
         cannabinoids, terpenes, im_sources, no_imgs, names, clean_names = load_raw_scrape()
         clean_flow = clean_flow_df(flow_df, clean_names)
+
+        flow_nameset = set(clean_flow['clean_name'])
+
+        matches = match_up_leafly_names(flow_nameset)
     # must be some javascript to load the image...
     # requests doesn't find it
     # res1 = requests.get(flower_links[0])
