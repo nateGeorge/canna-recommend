@@ -15,6 +15,7 @@ from fake_useragent import UserAgent
 import db_functions as dbfunc
 import numpy as np
 import pandas as pd
+import leafly.data_preprocess as dp
 
 delay_penalty = 1  # time to wait until starting next thread if can't scrape current one
 ua = UserAgent()
@@ -370,6 +371,132 @@ def scrape_for_num(strain):
         coll.insert_one({'review_count': [num_reviews]})
     client.close()
 
+def update_reviews(strains):
+    agent = ua.random  # select a random user agent
+    headers = {
+        "Connection": "close",  # another way to cover tracks
+        "User-Agent": agent
+    }
+    # need to connect to client in each process and thread
+    client = MongoClient()
+    db = client[DB_NAME]
+
+    for strain in strains:
+        url = BASE_URL + s + '/reviews'
+        if strain == '/Indica/chocolate-kush':
+            coll = db['chocolate-kush-indica']
+        else:
+            coll = db[strain.split('/')[-1]]
+
+        reviews_block = []
+        while len(reviews_block) == 0:
+            res = requests.get(url, cookies=cooks)
+            soup = bs(res.content, 'lxml')
+            reviews_block = soup.findAll('span', {'class': 'hidden-xs'})
+            time.sleep(2)
+
+        num_reviews = int(reviews_block[0].get_text().strip('(').strip(')') )
+        print num_reviews, 'total reviews on site'
+        cur_reviews = coll.find({'review_count':{'$exists':True}}).next()['review_count'][-1]
+        if cur_reviews < num_reviews:
+            genetics = strain.split('/')[1]
+            num_to_scrape = num_reviews - cur_reviews
+            scrape_reviews_page_threads_update(strain, url, genetics, num_to_scrape)
+
+def scrape_reviews_page_threads_update(strain, url, genetics, num_to_scrape, verbose=True, num_threads=10):
+    '''
+    scrapes reviews page for all reviews
+    url is a string for the specified strain homepage
+
+    returns list of reviews
+    each review consist of a tuple of (user, stars, review_text, datetime_of_review)
+
+    num_threads is number of threads run at one time, I noticed it tends to
+    not work well when more than 30 are run at once
+    '''
+    agent = ua.random  # select a random user agent
+    headers = {
+        "Connection": "close",  # another way to cover tracks
+        "User-Agent": agent
+    }
+    # need to connect to client in each process and thread
+    client = MongoClient()
+    db = client[DB_NAME]
+
+    if strain == '/Indica/chocolate-kush':
+        coll = db['chocolate-kush-indica']
+    else:
+        coll = db[strain.split('/')[-1]]
+
+    pages = num_to_scrape / 8
+    scrapetime = datetime.utcnow().isoformat()
+    threads = []
+    if coll.find({'genetics': genetics}).count() == 0:
+        coll.insert_one({'genetics': genetics})
+    if coll.find({'scrape_times': {'$exists': True}}).count() == 0:
+        coll.insert_one({'scrape_times': [scrapetime]})
+    else:
+        coll.update_one({'scrape_times': {'$exists': True}}, {
+                        '$push': {'scrape_times': scrapetime}})
+    if coll.find({'review_count': {'$exists': True}}).count() == 0:
+        coll.insert_one({'review_count': [num_reviews]})
+    else:
+        coll.update_one({'review_count': {'$exists': True}}, {
+                        '$push': {'review_count': num_reviews}})
+        rev_cnt = coll.find({'review_count': {'$exists': True}})[0][
+            'review_count'][-1] + 1  # correct for leafly miscounting
+        if rev_cnt == num_reviews:
+            print 'already up-to-date'
+            return
+
+    if pages < 10:
+        for i in range(pages + 1):
+            cur_url = url + '?page=' + str(i)
+            if verbose:
+                print 'scraping', cur_url
+            # scrape_a_review_page(cur_url)
+            t = threading.Thread(target=scrape_a_review_page, args=(cur_url,))
+            t.start()
+            threads.append(t)
+        for th in threads:
+            th.join()
+    else:
+        if pages > 50:
+            delay = 10
+        else:
+            delay = 5
+        for j in range(pages / 10):
+            print 'scraping pages', j * 10, 'to', (j + 1) * 10
+            for i in range(j * 10, (j + 1) * 10):
+                cur_url = url + '?page=' + str(i)
+                if verbose:
+                    print 'scraping', cur_url
+                # scrape_a_review_page(cur_url)
+                t = threading.Thread(
+                    target=scrape_a_review_page, args=(cur_url,))
+                t.start()
+                threads.append(t)
+
+            for th in threads:
+                th.join()
+
+            time.sleep(delay)
+
+        if (pages % 10) != 0:
+            print 'scraping pages', (j + 1) * 10, 'to', pages + 1
+            for i in range((j + 1) * 10, pages + 1):
+                cur_url = url + '?page=' + str(i)
+                if verbose:
+                    print 'scraping', cur_url
+                # scrape_a_review_page(cur_url)
+                t = threading.Thread(
+                    target=scrape_a_review_page, args=(cur_url,))
+                t.start()
+                threads.append(t)
+            for th in threads:
+                th.join()
+
+    client.close()
 
 def scrape_reviews_parallel(strains, pool_size=None):
     if pool_size is None:
@@ -561,6 +688,10 @@ def scrape_a_review_page(url, verbose=True):
             datadict['text'] = text
             datadict['link'] = review_link
             datadict['date'] = date
+            if coll.find(datadict).count() > 0:
+                print 'already in db'
+                continue
+            print 'not in db, adding'
             coll.insert_one(datadict)
     except Exception as e:
         print 'ERROR DAMMIT:', e
@@ -649,6 +780,193 @@ def get_strains_left_to_scrape(strains):
     strains_left = strains[mask == 1]
     return strains_left
 
+def scrape_individ_pages(df):
+    '''
+    takes in review dataframe (i.e. from data_preprocess module)
+
+    scrapes each individ review page for content
+    places into mongo db
+    '''
+
+    client = MongoClient()
+    db = client['leafly_full_reviews']
+    coll = db['full_reviews']
+    forms = []
+    methods = []
+    effects = []
+    flavors = []
+    locations = []
+    isok = [] # for keeping track of how many requests were ok
+    for i, r in df.iterrows():
+        if coll.find({'link':r['link'], 'isok':True}).count() != 0:
+            print 'already scraped', r['link']
+            continue
+
+        res = requests.get(BASE_URL + r['link'])
+        isok.append(res.ok)
+        print 'on', i, 'response:', res.ok
+        soup = bs(res.content, 'lxml')
+        fullReview = soup.findAll('div', {'class': 'copy--md copy-md--xl padding-rowItem--xl notranslate'})[0].get_text()
+        tags = soup.findAll('div', {'class':'divider bottom padding-listItem'})
+        fm = tags[0].findAll('li')
+        cur_form = ''
+        cur_method = ''
+        if len(fm) == 2:
+            cur_form = fm[0].get_text().strip()
+            forms.append(cur_form)
+            cur_method = fm[1].get_text().strip()
+            methods.append(cur_method)
+        else:
+            forms.append('nan')
+            methods.append('nan')
+        ef = tags[1].findAll('li')
+        cur_effects = []
+        if len(ef) > 0:
+            cur_effects = [l.get_text().strip() for l in ef]
+
+        effects.append(cur_effects)
+        fl = tags[2].findAll('li')
+        cur_flavors = []
+        if len(fl) > 0:
+            cur_flavors = [l.get_text().strip() for l in fl]
+
+        flavors.append(cur_flavors)
+
+        loc = soup.findAll('a', {'class':'copy--md'})
+        cur_location = ''
+        if len(loc) > 0:
+            try:
+                cur_location = loc[0].get('href')
+                locations.append(cur_location)
+            except:
+                locations.append('')
+        else:
+            locations.append('')
+
+        coll.insert_one({'link':r['link'],
+                        'form':cur_form,
+                        'method':cur_method,
+                        'effects':cur_effects,
+                        'flavors':cur_flavors,
+                        'locations':cur_location,
+                        'isok':res.ok,
+                        'full_review':fullReview})
+
+    links = df['link']
+
+    full_df = pd.DataFrame({'link':links,
+                        'form':forms,
+                        'method':methods,
+                        'effects':effects,
+                        'flavors':flavors,
+                        'locations':locations,
+                        'isok':isok})
+
+    client.close()
+
+    return full_df
+
+def scrape_one_individ(r):
+    '''
+    takes in ONE ROW of a review dataframe (i.e. from data_preprocess module)
+
+    scrapes each individ review page for content
+    places into postgresql db
+    '''
+
+    client = MongoClient()
+    db = client['leafly_full_reviews']
+    coll = db['full_reviews']
+    if coll.find({'link':r['link'], 'isok':True}).count() != 0:
+        print 'already scraped', r['link']
+        client.close()
+        return None
+
+    forms = []
+    methods = []
+    effects = []
+    flavors = []
+    locations = []
+
+    res = requests.get(BASE_URL + r['link'])
+    isok = res.ok
+    print 'on', r['product'], 'response:', res.ok
+    soup = bs(res.content, 'lxml')
+    fullReview = soup.findAll('div', {'class': 'copy--md copy-md--xl padding-rowItem--xl notranslate'})[0].get_text()
+    tags = soup.findAll('div', {'class':'divider bottom padding-listItem'})
+    fm = tags[0].findAll('li')
+    if len(fm) == 2:
+        forms.extend(fm[0].get_text().strip().split())
+        methods.extend(fm[1].get_text().strip().split())
+    else:
+        pass
+    ef = tags[1].findAll('li')
+    if len(ef) > 0:
+        effects.extend([l.get_text().strip() for l in ef])
+    else:
+        pass
+    fl = tags[2].findAll('li')
+    if len(fl) > 0:
+        flavors.extend([l.get_text().strip() for l in fl])
+    else:
+        pass
+
+    loc = soup.findAll('a', {'class':'copy--md'})
+    if len(loc) > 0:
+        try:
+            locations = loc[0].get('href')
+        except:
+            pass
+    else:
+        pass
+
+    links = [r['link']]
+
+    datadict = {'link':links,
+                'form':forms,
+                'method':methods,
+                'effects':effects,
+                'flavors':flavors,
+                'locations':locations,
+                'isok':isok,
+                'full_review':fullReview}
+
+    coll.insert_one({'link':r['link'],
+                    'form':forms,
+                    'method':methods,
+                    'effects':effects,
+                    'flavors':flavors,
+                    'locations':locations,
+                    'isok':isok,
+                    'full_review':fullReview})
+    client.close()
+
+    return datadict
+
+def scrape_individ_pages_mt(df):
+    pool_size = mp.cpu_count()
+
+    pool = mp.Pool(processes=pool_size)
+    dfs = pool.map(func=scrape_one_individ, iterable=df.iterrows())
+
+    return dfs
+
+def finish_scraping(strains):
+    '''
+    finished up the initial brute-force scrape
+    note some of the reviews are exact dupes
+    '''
+    # to re-scrape those with some missing data:
+    # gonna have to run a few times...
+    # this is kind of a brute-force check, which will re-srape all review pages for those strains
+    ns, df = dbfunc.check_scraped_reviews()
+    needs_scrape = list(df[df['needs_scrape'] == 1]['product'].values)
+    needs_scrape = set([n.lower() for n in needs_scrape])
+    strains_left = [s for s in strains if s.split(
+        '/')[-1].lower() in needs_scrape]
+    # need to update so it only scrapes until it reaches a review it already has
+    scrape_reviews_parallel(strains_left)
+
 if __name__ == "__main__":
 
     driver = setup_driver()
@@ -658,6 +976,17 @@ if __name__ == "__main__":
     # base_url = 'https://weedmaps.com/'
     # url = base_url + 'dispensaries/in/united-states/colorado/denver-downtown'
     strains = load_strain_list()
+    ns, df = dbfunc.check_scraped_reviews()
+    strain_names = set([s.split('/')[-1].lower() for s in strains])
+    scraped_strains = set([s.lower() for s in dbfunc.get_list_of_scraped()])
+    # strains on the site but not in the db
+    new_to_scrape = strain_names.difference(scraped_strains)
+    nts = [s for s in strains if s.split(
+        '/')[-1].lower() in new_to_scrape]
+
+    scrape_new = False
+    if scrape_new:
+        scrape_reviews_parallel(nts)
     # strains_left = get_strains_left_to_scrape(strains)
     # chunk_size = 10 # scrape 10 strains at a time so as not to overload anything
     # while len(strains_left) > 0:
@@ -665,12 +994,19 @@ if __name__ == "__main__":
     #     strains_left = get_strains_left_to_scrape(strains)
     #     scrape_reviews_parallel(strains_left)
     #     time.sleep(4)
+    #finish_scraping(strains)
 
-    # to re-scrape those with some missing data:
-    # gonna have to run a few times...
-    ns, df = dbfunc.check_scraped_reviews()
-    needs_scrape = list(df[df['needs_scrape'] == 1]['product'].values)
-    needs_scrape = set([n.lower() for n in needs_scrape])
-    strains_left = [s for s in strains if s.split(
-        '/')[-1].lower() in needs_scrape]
-    scrape_reviews_parallel(strains_left)
+    #update_reviews(strains_left)
+
+    # scrape each individ review page for effects, full review, consumption method, etc
+    scrape_long = True
+    if scrape_long:
+        review_df = dp.load_data(fix_names=False, clean_reviews=False, no_anon=False, get_links=True)
+        #full_df = scrape_individ_pages(review_df) # single-throughput
+        pool_size = mp.cpu_count()
+        pool = mp.Pool(processes=pool_size)
+        chunk_step = int(round(review_df.shape[0] / 4.0))
+        chunks = []
+        for i in range(4):
+            chunks.append(review_df.iloc[i*chunk_step:(i+1)*chunk_step])
+        stuff = pool.map(func=scrape_individ_pages, iterable=chunks)
