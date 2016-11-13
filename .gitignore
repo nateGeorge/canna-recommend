@@ -11,6 +11,9 @@ analytical360/archives_pages/*
 *.odp
 pill_ims/*
 
+# don't match these files
+!leafly/strain*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
