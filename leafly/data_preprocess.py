@@ -30,7 +30,7 @@ def clean_reviews_func(df):
     return df
 
 
-def load_data(fix_names=True, clean_reviews=True):
+def load_data(fix_names=True, clean_reviews=True, no_anon=True, get_links=False):
     '''
     loads all review data into pandas DataFrame
     if fix_name==True, will fix the encoded names to their readable parallels
@@ -49,6 +49,7 @@ def load_data(fix_names=True, clean_reviews=True):
     reviews = []
     dates = []
     users = []
+    links = []
     for c in db.collection_names():
         if c in coll_skips:
             continue
@@ -63,9 +64,15 @@ def load_data(fix_names=True, clean_reviews=True):
             reviews.append(e['text'])
             dates.append(e['date'])
             users.append(e['user'])
+            if get_links:
+                links.append(e['link'])
 
-    df = pd.DataFrame({'rating': ratings, 'review': reviews,
-                       'date': dates, 'user': users, 'product': products})
+    if get_links:
+        df = pd.DataFrame({'rating': ratings, 'review': reviews,
+                        'date': dates, 'user': users, 'product': products, 'link': links})
+    else:
+        df = pd.DataFrame({'rating': ratings, 'review': reviews,
+                        'date': dates, 'user': users, 'product': products})
     if clean_reviews:
         df = clean_reviews_func(df)
     if fix_names:
@@ -75,7 +82,9 @@ def load_data(fix_names=True, clean_reviews=True):
     dates = pd.to_datetime(df['date'])
     df['date'] = dates.apply(lambda x: x.date())
     df['time'] = dates.apply(lambda x: x.time())
-    df = df[df['user'] != 'Anonymous']
+    if no_anon:
+        df = df[df['user'] != 'Anonymous']
+
     df = df.drop_duplicates(subset=[u'product', u'rating', u'review', u'user'])
     return df
 

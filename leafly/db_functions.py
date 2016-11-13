@@ -127,7 +127,7 @@ def remove_dupes(test=True, dbname=None):
             [
                 # sometimes have the same text but different users...e.g.
                 # anonymous and not
-                {"$group": {"_id": {"text": "$text", "user": "$user"},
+                {"$group": {"_id": {"text": "$text", "user": "$user", "stars": "$stars", "date": "$date"},
                             "scrape_times": {"$addToSet": "$scrape_times"},
                             "review_count": {"$addToSet": "$review_count"},
                             "genetics": {"$addToSet": "$genetics"},
@@ -137,9 +137,9 @@ def remove_dupes(test=True, dbname=None):
                             }
                  },
                 {"$match": {"count": {"$gte": 2},
-                            "$size": {"scrape_times": {"$eq": 0}},
-                            "$size": {"review_count": {"$eq": 0}},
-                            "$size": {"genetics": {"$eq": 0}}
+                            "scrape_times": {'$exists': False},
+                            "review_count": {'$exists': False},
+                            "genetics": {'$exists': False}
                             }
                  }
             ]
@@ -156,7 +156,7 @@ def remove_dupes(test=True, dbname=None):
 
         cursor = db[c].aggregate(
             [
-                {"$group": {"_id": {"text": "$text", "user": "$user"},
+                {"$group": {"_id": {"text": "$text", "user": "$user", "stars": "$stars", "date": "$date"},
                             "scrape_times": {"$addToSet": "$scrape_times"},
                             "review_count": {"$addToSet": "$review_count"},
                             "genetics": {"$addToSet": "$genetics"},
@@ -166,9 +166,9 @@ def remove_dupes(test=True, dbname=None):
                             }
                  },
                 {"$match": {"count": {"$gte": 2},
-                            "$size": {"scrape_times": {"$eq": 0}},
-                            "$size": {"review_count": {"$eq": 0}},
-                            "$size": {"genetics": {"$eq": 0}}
+                            "scrape_times": {'$exists': False},
+                            "review_count": {'$exists': False},
+                            "genetics": {'$exists': False}
                             }
                  }
             ]
@@ -278,19 +278,30 @@ def check_if_rev_count(dbname=None):
     return df
 
 
-def check_scraped_reviews(dbname=None):
+def check_scraped_reviews(dbname=None, rem_dupe=False):
     '''
     first removes duplicates in db
     then counts how many reviews are there for each product
     compares counts to how many were listed on the site
     returns a list of strains that need re-scraping
     '''
+
+    # special set I noticed has count off by a bit
+    blacklist = set(['cat-piss',
+    'kushberry',
+    'nuggetry-og',
+    'master-kush',
+    'somango',
+    'dirty-girl',
+    'cannalope-kush'])
+
     if dbname is None:
         dbname = DB_NAME
 
     client = MongoClient()
     db = client[dbname]
-    remove_dupes(test=False, dbname=dbname)
+    if rem_dupe:
+        remove_dupes(test=False, dbname=dbname)
     coll_skips = set(
         ['system.indexes', 'review_counts', 'scraped_review_pages'])
     #
@@ -312,7 +323,7 @@ def check_scraped_reviews(dbname=None):
             reviews_scraped.append(count)
             products.append(c)
             review_count.append(rev_cnt)
-            if rev_cnt > count:
+            if rev_cnt > count + 1 and c not in blacklist: # have to add one since leafly can't count...
                 needs_scrape.append(1)
             else:
                 needs_scrape.append(0)
