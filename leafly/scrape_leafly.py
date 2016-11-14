@@ -803,12 +803,13 @@ def scrape_individ_pages(df):
             continue
 
         ok = False
-        i = 0
+        j = 0
         while not ok:
-            i += 1
+            j += 1
             res = requests.get(BASE_URL + r['link'])
+            ok = res.ok
             time.sleep(1)
-            if i == 4:
+            if j == 4:
                 break
 
         isok.append(res.ok)
@@ -995,6 +996,22 @@ def finish_scraping(strains):
     # need to update so it only scrapes until it reaches a review it already has
     scrape_reviews_parallel(strains_left)
 
+def get_already_scraped():
+    '''
+    retrieves list of individual reviews already scraped
+    '''
+    client = MongoClient()
+    db = client['leafly_full_reviews']
+    coll = db['full_reviews']
+    cur = coll.find({'isok':True})
+    links = []
+    for doc in cur:
+        links.append(doc['link'])
+
+    client.close()
+
+    return links
+
 if __name__ == "__main__":
 
     driver = setup_driver()
@@ -1029,12 +1046,14 @@ if __name__ == "__main__":
     # scrape each individ review page for effects, full review, consumption method, etc
     scrape_long = True
     if scrape_long:
+        already_scraped = set(get_already_scraped())
         review_df = dp.load_data(fix_names=False, clean_reviews=False, no_anon=False, get_links=True)
+        remain_df = review_df[~review_df['link'].isin(already_scraped)]
         #full_df = scrape_individ_pages(review_df) # single-throughput
         pool_size = mp.cpu_count()
         pool = mp.Pool(processes=pool_size)
-        chunk_step = int(round(review_df.shape[0] / 4.0))
+        chunk_step = int(round(remain_df.shape[0] / 4.0))
         chunks = []
         for i in range(4):
-            chunks.append(review_df.iloc[i*chunk_step:(i+1)*chunk_step])
+            chunks.append(remain_df.iloc[i*chunk_step:(i+1)*chunk_step])
         stuff = pool.map(func=scrape_individ_pages_thread, iterable=chunks)
