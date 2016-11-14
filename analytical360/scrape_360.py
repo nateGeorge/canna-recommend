@@ -246,11 +246,28 @@ def scrape_site(df, base_im_path='analytical360/new_images/', delay=None, sql=No
             src = img.get_attribute('src')
             im_sources.append(src)
             print src
+            if os.path.exists(save_path):
+                print r['name'], 'already saved image'
+            else:
+                print save_path
+                if not isedible:
+                    try:
+                        download_image(src, save_path, headers, cooks)
+                    except:
+                        no_imgs.append(r)
+                        im_sources.pop()
+                        src = ''
         except:
             no_imgs.append(r)
             src = ''
 
-        table1 = driver.find_element_by_xpath('//*[@id="mainwrapper"]/div[4]/div[1]/div[7]/div/div[1]/ul')
+        try:
+            table1 = driver.find_element_by_xpath('//*[@id="mainwrapper"]/div[4]/div[1]/div[7]/div/div[1]/ul')
+        except:
+            cannabinoids.append([])
+            terpenes.append([])
+            continue
+
         table1soup = bs(table1.get_attribute('innerHTML'), 'lxml')
         table1rows = [l.get_text() for l in table1soup.findAll('li')]
         isedible = False
@@ -266,13 +283,6 @@ def scrape_site(df, base_im_path='analytical360/new_images/', delay=None, sql=No
         table2soup = bs(table2.get_attribute('innerHTML'), 'lxml')
         table2rows = [l.get_text() for l in table2soup.findAll('li')]
         terpenes.append(table2rows)
-
-        if os.path.exists(save_path):
-            print r['name'], 'already saved image'
-        else:
-            print save_path
-            if not isedible:
-                download_image(src, save_path, headers, cooks)
 
         coll.insert_one(
             {'cannabinoids': table1rows,

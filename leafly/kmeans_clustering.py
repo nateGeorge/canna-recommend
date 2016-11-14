@@ -17,19 +17,22 @@ from sklearn.metrics import silhouette_score
 
 df, prod_review_df = sfw.load_data()
 
-tfvect, vect_words, review_vects = nl.lemmatize_tfidf(prod_review_df, max_features=1000)
+tfvect, vect_words, review_vects = nl.lemmatize_tfidf(prod_review_df, max_features=1000, ngram_range=(1, 2))
 pca_r= PCA(n_components=200)
 review_pca = pca_r.fit_transform(review_vects)
 
 num_kmeans = 15
 kmeanses = []
 scores = []
+sil_scores = []
 start = time.time()
 for i in range(2, num_kmeans):
     km = KMeans(n_clusters=i, n_jobs=-1, random_state=42)
     kmeanses.append(km)
     km.fit(review_pca)
     scores.append(-km.score(review_pca)) # withi-cluster sum of squares
+    labels = km.labels_
+    sil_scores.append(silhouette_score(review_vects, labels, metric='euclidean'))
 
 endTime = time.time()
 print 'took', endTime - start, 'seconds'
@@ -71,7 +74,7 @@ plt.show()
 
 # adapted from plotly and SO
 # http://stackoverflow.com/questions/26941135/show-legend-and-label-axes-in-plotly-3d-scatter-plots
-cur_km = kmeanses[3]
+cur_km = kmeanses[1]
 traces = []
 for i in range(3):
     x, y, z = review_pca[cur_km.labels_ == i, 0], review_pca[cur_km.labels_ == i, 1], review_pca[cur_km.labels_ == i, 3]
@@ -104,8 +107,23 @@ layout = Layout(
 fig = go.Figure(data=traces, layout=layout)
 py.plot(fig, filename='3 KMeans clusters of strains', world_readable=True)
 
+# lets find top grams in each group
+vect_words = np.array(tfvect.get_feature_names())
+groups = []
+for i in range(3):
+    names = prod_review_df[cur_km.labels_ == i]['product']
+    groups.append(prod_review_df[cur_km.labels_ == i])
+    words = review_vects[cur_km.labels_ == i, :]
+    avg_vects = words.mean(axis=0)
+    idx = np.argsort(avg_vects)[::-1]
+    print 'group', i
+    print zip(avg_vects[idx][:10], vect_words[idx][:10])
+    print ''
+    print ''
 
 
+
+####################
 
 
 num_kmeans = 15
