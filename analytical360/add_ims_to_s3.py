@@ -55,7 +55,12 @@ class awsS3(object):
 
     def download_files(self, file_list, bucket_list, path_prefix='analytical360/images/'):
         for f, l in zip(file_list, bucket_list):
-            l.get_contents_to_filename(path_prefix + f)
+            path = path_prefix + f
+            if not os.path.exists(path):
+                print 'downloading', f
+                l.get_contents_to_filename(path)
+            else:
+                print 'already have', f
 
 if __name__ == "__main__":
     pics1 = list(glob.iglob('analytical360/archive_images/*.jpg'))
