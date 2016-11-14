@@ -802,7 +802,15 @@ def scrape_individ_pages(df):
             print 'already scraped', r['link']
             continue
 
-        res = requests.get(BASE_URL + r['link'])
+        ok = False
+        i = 0
+        while not ok:
+            i += 1
+            res = requests.get(BASE_URL + r['link'])
+            time.sleep(1)
+            if i == 4:
+                break
+
         isok.append(res.ok)
         print 'on', i, 'response:', res.ok
         soup = bs(res.content, 'lxml')
@@ -852,19 +860,39 @@ def scrape_individ_pages(df):
                         'isok':res.ok,
                         'full_review':fullReview})
 
-    links = df['link']
-
-    full_df = pd.DataFrame({'link':links,
-                        'form':forms,
-                        'method':methods,
-                        'effects':effects,
-                        'flavors':flavors,
-                        'locations':locations,
-                        'isok':isok})
-
     client.close()
 
-    return full_df
+    if isok != []:
+        links = df['link']
+        full_df = pd.DataFrame({'link':links,
+                            'form':forms,
+                            'method':methods,
+                            'effects':effects,
+                            'flavors':flavors,
+                            'locations':locations,
+                            'isok':isok})
+
+        return full_df
+
+    return None
+
+def scrape_individ_pages_thread(df):
+    '''
+    '''
+    chunksize = 10
+
+    for i in range(0, df.shape[0] + chunksize, chunksize*10):
+        threads = []
+        j = 0
+        while j < 10:
+            j += 1
+            t = threading.Thread(
+                target=scrape_individ_pages, args=(df.iloc[i + j*chunksize:i + (j+1)*chunksize],))
+            t.start()
+            threads.append(t)
+            for th in threads:
+                th.join()
+
 
 def scrape_one_individ(r):
     '''
@@ -1009,4 +1037,4 @@ if __name__ == "__main__":
         chunks = []
         for i in range(4):
             chunks.append(review_df.iloc[i*chunk_step:(i+1)*chunk_step])
-        stuff = pool.map(func=scrape_individ_pages, iterable=chunks)
+        stuff = pool.map(func=scrape_individ_pages_thread, iterable=chunks)
