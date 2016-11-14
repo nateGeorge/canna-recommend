@@ -17,3 +17,7 @@ db.copyDatabase(fromdb='leafly_backup_2016-11-01_backup_2016-11-01_2_3', todb='l
 
 leafly only has part of the site
 leafly_backup_2016-11-01_2 is the backup
+
+
+# to get most recent entry in a mongodb:
+db['full_reviews'].find().sort({$natural:-1}).limit(1)
