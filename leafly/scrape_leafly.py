@@ -808,7 +808,8 @@ def scrape_individ_pages(df):
             j += 1
             res = requests.get(BASE_URL + r['link'])
             ok = res.ok
-            time.sleep(1)
+            if j > 0:
+                time.sleep(1)
             if j == 4:
                 break
 
