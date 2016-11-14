@@ -66,8 +66,10 @@ if __name__ == "__main__":
     # aws.upload_big_file(source_path)
 
     # to download all files:
-    # files, bucket_list = aws.get_all_files()
-    # aws.download_files(files, bucket_list)
+    if not os.path.exists('analytical360/images/'):
+        os.mkdir('analytical360/images/')
+    files, bucket_list = aws.get_all_files()
+    aws.download_files(files, bucket_list)
 
     # to upload all files from local:
     # for p in pics2: # also do for pics1
