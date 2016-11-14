@@ -84,18 +84,12 @@ div.container {
     color: green;
 }
 
-@media (min-width: 768px) {
-    .navbar-nav {
-        width: 100%;
-        text-align: center;
-    }
-    .navbar-nav>li {
-        float: none;
-        display: inline-block;
-    }
-    .navbar-nav>li.navbar-right {
-        float: right !important;
-    }
+/*navbar alignment*/
+.navbar-header .navbar-nav .nav{
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    margin-bottom: -10px;
 }
 
 
@@ -129,21 +123,29 @@ ul.bag {
    left: 0px;
    width: 70%;
    height: 80%;
-   margin-top:-30px;
+   margin-top:15px;
  }
 
- li.bag_words {
-   float: right;
- }
-
- .scrollable-menu {
-     height: 80%;
+.scrollable-menu {
+     height: 65%;
      max-height: 300px;
      overflow-x: hidden;
  }
- .col-center-block {
+
+.col-center-block {
     float: none;
     display: block;
     margin: 0 auto;
     /* margin-left: auto; margin-right: auto; */
+}
+
+.bag_words {
+    margin: 0;
+    margin-top: -1em;
+    margin-bottom: -1em;
+    padding-top: 0;
+    padding-bottom: 0;
+    float: right;
+    display: inline-block;
+    line-height: 1px;
 }

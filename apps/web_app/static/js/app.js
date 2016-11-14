@@ -1,4 +1,4 @@
-var post_main_addr = 'http://cannadvise.me' //'http://35.161.235.42:10001'; // address with flask api 'http://0.0.0.0:10001' //
+var post_main_addr = 'http://0.0.0.0:10001' //'http://cannadvise.me' //'http://35.161.235.42:10001'; // address with flask api
 
 function add_to_bag(word, i, rec) {
   var index = chosen_words.indexOf(word);
@@ -70,9 +70,19 @@ function fit_bag() {
   $('ul.bag').attr('top', $('#bag_im').height()*0.2);
 }
 
+function load_new_words() {
+  // loads new choices of words and categories
+  $.post(post_main_addr + '/get_product_words', function(data, err) {
+      words = $.parseJSON(data);
+      categories = Object.keys(words);
+      var num_cats = categories.length;
+      setWords();
+  });
+}
+
 function load_main() {
     console.log('loading...');
-    $('.page-wrap').load('./main.html', complete = function() {
+    $('.main_page').load('./main.html', complete = function() {
 
         // when the words are clicked, toggle their active state
         $('.list-group-item').click(function() {
@@ -101,7 +111,7 @@ function load_main() {
             console.log(chosen_words);
             $('#landing').fadeOut(function() {
                 // make recommendation
-                $('.page-wrap').load('rec_body.html', complete = function() {
+                $('.main_page').load('rec_body.html', complete = function() {
                     recommend(chosen_words);
                     $('#bag_im').ready(function() {
                       // fit im width to screen (for mobile)
@@ -190,8 +200,11 @@ function setWords() {
         word_samp = getRandomElements(words[cats[i]]);
         rows.slice(1).each(function(i, e) {
             e.innerHTML = word_samp[i];
+            if ($(e).hasClass('active')) {
+              $(e).removeClass('active');
+            }
         });
-    });
+    }).hide().fadeIn();
 }
 
 function parse_recs(recs) {
@@ -255,7 +268,5 @@ $('#home').click(function() {
 $('#refresh').click(function() {
     get_chosen_words();
     console.log(chosen_words);
-    $('#landing').fadeOut(function() {
-        load_main();
-    });
+    load_new_words();
 });
