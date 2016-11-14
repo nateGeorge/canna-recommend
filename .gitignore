@@ -13,6 +13,9 @@ pill_ims/*
 
 # don't match these files
 !leafly/strain*
+!analytical360/data*.pk
+!analytical360/leafly*.pk
+!analytical360/nn*.pk
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
