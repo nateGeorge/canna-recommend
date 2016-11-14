@@ -13,6 +13,8 @@ import string
 import time
 import psycopg2 as pg
 from pymongo import MongoClient
+import leafly.data_preprocess as dp
+import leafly.scrape_leafly as sl
 
 ua = UserAgent()
 MAIN_URL = 'http://analytical360.com/testresults'
@@ -335,18 +337,19 @@ def parse_raw_scrape(cannabinoids, terpenes, names):
                         'cbd-total':'cbd_total',
                         'cbd total':'cbd_total',
                         'activated total':'activated_total',
-                        'activated':'activated_total'} # converts similar strings to the dict key forf cannabiniod dict
+                        'activated':'activated_total',
+                        'active':'activated_total'} # converts similar strings to the dict key forf cannabiniod dict
     cannabinoid_dict = {}
     screen_tups = zip(range(len(trail)), trail, cannabinoid_strs)
     for i, cann in enumerate(cannabinoids):
         print i
         temp_cann = c_dict_keys[:]
-        cannabinoid_dict.setdefault('name', []).append(names[i])
+        #cannabinoid_dict.setdefault('name', []).append(names[i])
         for ca in cann:
             for j, t, c in screen_tups:
                 has_str, num = find_string(ca, c, t)
                 if has_str:
-                    idx = list(cannabinoid_strs).index(c)
+                    # idx = list(cannabinoid_strs).index(c)
                     # cannabinoid_strs.rotate(-idx) # move that entry to the beginning of the list
                     # trail.rotate(-idx)
                     # screen_tups = zip(range(len(trail)), trail, cannabinoid_strs)
@@ -362,7 +365,7 @@ def parse_raw_scrape(cannabinoids, terpenes, names):
         if len(temp_cann) > 0:
             print 'didn\'t scrape:', temp_cann
             for t in temp_cann:
-                cannabinoid_dict.setdefault(c, []).append('nan')
+                cannabinoid_dict.setdefault(t, []).append('')
 
 
     terp_strs = deque(['beta-Pinene',
@@ -402,7 +405,7 @@ def parse_raw_scrape(cannabinoids, terpenes, names):
     for i, terp in enumerate(terpenes):
         print i
         temp_cann = t_dict_keys[:]
-        terp_dict.setdefault('name', []).append(names[i])
+        #terp_dict.setdefault('name', []).append(names[i])
         for ta in terp:
             for c in terp_strs:
                 has_str, num = find_string(ta, c)
@@ -411,31 +414,34 @@ def parse_raw_scrape(cannabinoids, terpenes, names):
                     print 'found', c, ta
                     if c in terp_conv_dict:
                         terp_dict.setdefault(terp_conv_dict[c], []).append(num)
-                        temp_cann.remove(conversion_dict[c])
+                        temp_cann.remove(terp_conv_dict[c])
                     else:
                         terp_dict.setdefault(c, []).append(num)
                         temp_cann.remove(c)
                     break
 
-    if len(temp_cann) > 0:
-        print 'didn\'t scrape:', temp_cann
-        for t in temp_cann:
-            terp_dict.setdefault(c, []).append('nan')
+        if len(temp_cann) > 0:
+            print 'didn\'t scrape:', temp_cann
+            for t in temp_cann:
+                terp_dict.setdefault(t, []).append('')
 
-    terp_dict['names'] = names
-    cannabinoid_dict['names'] = names
+    cannabinoid_dict['name'] = names
+    for k in cannabinoid_dict:
+        print k, len(cannabinoid_dict[k])
+    for k in terp_dict:
+        print k, len(terp_dict[k])
 
     cdf = pd.DataFrame(cannabinoid_dict)
     tdf = pd.DataFrame(terp_dict)
-    total_df = cdf.merge(tdf, on='name')
+    total_df = cdf.merge(tdf, left_index=True, right_index=True)
 
     return total_df
 
 def find_string(search_str, str_to_find='THC-A', trail=False):
     if search_str.find('8-THC') != -1:
         return 0, 0
-    if search_str.find('< 0.01 TERPENE-TOTAL') != -1:
-        return 1, 0
+    # if search_str.find('< 0.01 TERPENE-TOTAL') != -1:
+    #     return 1, 0
     if trail:
         find_str = '.*' + str_to_find + '.*'
     else:
@@ -444,6 +450,8 @@ def find_string(search_str, str_to_find='THC-A', trail=False):
     res = re.search(find_str, search_str, re.IGNORECASE)
     if res:
         num = re.search('[\d\.]*', search_str).group(0)
+        if search_str.find('<\s*0.01') != -1:
+            return 1, 0
         return 1, num
 
     return 0, 0
@@ -497,9 +505,6 @@ def clean_flow_df(df, clean_names=None):
 
     return new_df
 
-import leafly.data_preprocess as dp
-import leafly.scrape_leafly as sl
-
 def clean_a_name(name_str):
     clean_name = re.sub('/', '-', name_str)
     clean_name = re.sub('[ + ' + string.punctuation + '\s]+', '', clean_name).lower()
@@ -512,28 +517,36 @@ def match_up_leafly_names(nameset):
     agrs: nameset -- set of names found from analytical360 to match with
     leafly strain names
     '''
+    nameset = nameset.copy()
+    nameset = [clean_a_name(n) for n in nameset]
     strains = sl.load_strain_list()
     strain_clean_names = [clean_a_name(n.split('/')[-1]) for n in strains]
 
+    # to get short names:
+    short_names = []
+    for s in strain_clean_names:
+        if len(s) < 4:
+            short_names.append(s)
+
+    skip_set = set(['ice', 'avi', 'ash', 'haze', 'thai', 'wsu', 'goo', 'or', 'ogkush', 'goat', 'flo', 'fireog', 'bsc', 'b4'])
     matches = []
     # translation from some leafly strain names to specific analytical360 names
     trans_dict = {'k1':'kk1',
                     'j1':'j1ridgewayg'}
     for s in strain_clean_names:
         # these names match too much, so we need to look for exact matches for now
-        if s in ['ash', 'haze', 'thai', 'wsu', 'goo', 'or', 'ogkush', 'goat', 'flo', 'fireog', 'bsc', 'b4']:
+        if s in skip_set:
             for f in nameset:
                 if f == s:
                     matches.append((s, f))
                     break # don't need to look through the rest
                     # of the nameset if this is true
-                continue # for now skip, since is matching sourbananasherbert, etc
-        for f in nameset:
-            if f.find(s) != -1 and f.find(s + 'x') == -1:
-                matches.append((s, f))
+        else:
+            for f in nameset:
+                if f.find(s) != -1 and f.find(s + 'x') == -1:
+                    matches.append((s, f))
 
     return matches
-
 
     # leafly_df = dp.load_data()
     # leafly_df['clean_name'] = leafly_df['product'].apply(clean_a_name)
@@ -563,6 +576,8 @@ if __name__ == "__main__":
         flow_nameset = set(clean_flow['clean_name'])
 
         matches = match_up_leafly_names(flow_nameset)
+
+    full_df = parse_raw_scrape(cannabinoids, terpenes, names)
     # must be some javascript to load the image...
     # requests doesn't find it
     # res1 = requests.get(flower_links[0])
