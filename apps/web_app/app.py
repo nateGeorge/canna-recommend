@@ -56,6 +56,34 @@ def send_words():
     resp.headers['Access-Control-Allow-Origin'] = '*'
     return resp
 
+@app.route('/send_leafly_user', methods=['POST', 'OPTIONS'])
+def send_leafly_user():
+    print request.get_json()
+    print request.json
+    print request.mimetype
+    print request.values
+    print request.form
+    user = request.form.getlist('user')
+    print user
+    print user[0]
+    k = int(request.form.getlist('k')[0])
+
+    recs = glp.make_rec(rec_engine, user[0], users_in_rec, k)
+    print recs
+    if recs is None:
+        flask.Response(json.dumps({'recs':None, 'links':None}))
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        return resp
+
+    links = []
+    for r in recs:
+        links.append(link_dict[r])
+
+    resp = flask.Response(json.dumps({'recs':recs, 'links':links}))
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    return resp
+
+
 if __name__ == '__main__':
     # link_dict needed to get links from recommendation function
     strains = sl.load_current_strains(True)
@@ -73,4 +101,5 @@ if __name__ == '__main__':
 
     prod_group_dfs, user_group_dfs = glp.load_group_dfs()
     prod_top_words, prod_word_counter = glp.load_top_words()
+    users_in_rec = pk.load(open('leafly/users_in_rec.pk'))
     app.run(host='0.0.0.0', port=10001, debug=True, threaded=True)

@@ -1,4 +1,4 @@
-var post_main_addr = 'http://cannadvise.me' //'http://35.161.235.42:10001'; // address with flask api 'http://0.0.0.0:10001' //
+var post_main_addr = 'http://0.0.0.0:10001' //'http://cannadvise.me' //'http://35.161.235.42:10001'; // address with flask api
 
 function add_to_bag(word, i, rec) {
   var index = chosen_words.indexOf(word);
@@ -172,6 +172,10 @@ function getRandomElements(lest, n = 3) {
         bucket.push(i);
     }
 
+    if (n == 1) {
+      // problem with indexing 1 I guess
+      return lest[getRandomFromBucket()];
+    }
     for (var i = 0; i <= n; i++) {
         returnlest.push(lest[getRandomFromBucket()]);
     }
@@ -258,6 +262,38 @@ $.ajaxSetup({
     cache: false
 });
 
+function load_leafly() {
+  $('#landing').fadeOut(function() {
+    $('.main_page').load('leafly_form.html', complete = function() {
+      var user_list = ['Chill_Panda', 'curiousgeorge03', 'hotrod1228'];
+      var user = getRandomElements(user_list, 1);
+      $('#leafly_user_id').val(user);
+        $('#explore').click(function() {
+          user = $('#leafly_user_id').val()
+          var cur_results = $('.strain_rec').length;
+          $.post(post_main_addr + '/send_leafly_user', data = {
+              user: user, k: cur_results
+          }, function(data, err) {
+            jsonData = JSON.parse(data);
+            recs = jsonData['recs'].slice(cur_results, cur_results + 10);
+            links = jsonData['links'].slice(cur_results, cur_results + 10);
+            console.log(recs);
+            $(recs).each(function(i, v) {
+              $('#recs_links').append('<li class="strain_rec"><a href="' + links[i] + '">' + v + '</a></li>');
+            });
+          });
+          // $.post(post_main_addr + , data = {
+          //     user: user
+          //     }, function(data, err) {
+          //     json_resp = $.parseJSON(data);
+          //     console.log(json_resp);
+          //     recs = Object.keys(json_resp);
+          // });
+        });
+    });
+  });
+}
+
 // navigation actions
 
 $('#home').click(function() {
@@ -269,4 +305,15 @@ $('#refresh').click(function() {
     get_chosen_words();
     console.log(chosen_words);
     load_new_words();
+});
+
+$('#leafly_user').click(function() {
+    chosen_words = [];
+    load_leafly();
+});
+
+$(document).on('click','.navbar-collapse.in',function(e) {
+    if( $(e.target).is('a') && $(e.target).attr('class') != 'dropdown-toggle' ) {
+        $(this).collapse('hide');
+    }
 });
