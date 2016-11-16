@@ -278,7 +278,11 @@ def scrape_site(df, base_im_path='analytical360/new_images/', delay=None, sql=No
         try:
             table2 = driver.find_element_by_xpath('//*[@id="mainwrapper"]/div[4]/div[1]/div[8]/div/div/ul')
         except:
-            table2 = driver.find_element_by_xpath('//*[@id="mainwrapper"]/div[4]/div[1]/div[9]/div/div/ul')
+            try:
+                table2 = driver.find_element_by_xpath('//*[@id="mainwrapper"]/div[4]/div[1]/div[9]/div/div/ul')
+            except:
+                terpenes.append([])
+                continue
 
         table2soup = bs(table2.get_attribute('innerHTML'), 'lxml')
         table2rows = [l.get_text() for l in table2soup.findAll('li')]
