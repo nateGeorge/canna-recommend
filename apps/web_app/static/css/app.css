@@ -120,10 +120,11 @@ h2.explore {
 ul.bag {
    position: absolute;
    top: 10%;
-   left: 0px;
-   width: 70%;
+   display: inline-block;
+   left: 50%;
+   transform: translatex(-60%);
    height: 80%;
-   margin-top:15px;
+   margin-top:30px;
  }
 
 .scrollable-menu {

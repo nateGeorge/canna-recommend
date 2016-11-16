@@ -35,6 +35,7 @@ function add_to_bag(word, i, rec) {
       }
     });
   });
+  $('ul.bag').width($('#bag_im').width()*1.3);
   $('#empty_bag').click(function() {
       chosen_words = [];
       empty_bag();
@@ -102,6 +103,12 @@ function load_main() {
             categories = Object.keys(words);
             var num_cats = categories.length;
             setWords();
+        });
+
+        $('#refresh').click(function() {
+            get_chosen_words();
+            console.log(chosen_words);
+            load_new_words();
         });
 
         // need to set this here, otherwise explore doesn't exist yet
@@ -263,23 +270,23 @@ $.ajaxSetup({
 });
 
 function load_leafly() {
-  $('#landing').fadeOut(function() {
+  $('#page_beef').fadeOut(function() {
     $('.main_page').load('leafly_form.html', complete = function() {
-      var user_list = ['Chill_Panda', 'curiousgeorge03', 'hotrod1228'];
+      var user_list = ['Chill_Panda', 'sweetbutter80', 'emanuel80', 'KindGodess420'];
       var user = getRandomElements(user_list, 1);
       $('#leafly_user_id').val(user);
         $('#explore').click(function() {
           user = $('#leafly_user_id').val()
           var cur_results = $('.strain_rec').length;
           $.post(post_main_addr + '/send_leafly_user', data = {
-              user: user, k: cur_results
+              user: user, k: cur_results + 10 // so we always get at least 10 results
           }, function(data, err) {
             jsonData = JSON.parse(data);
             recs = jsonData['recs'].slice(cur_results, cur_results + 10);
             links = jsonData['links'].slice(cur_results, cur_results + 10);
             console.log(recs);
             $(recs).each(function(i, v) {
-              $('#recs_links').append('<li class="strain_rec"><a href="' + links[i] + '">' + v + '</a></li>');
+              $('#recs_links').append('<li class="strain_rec"><a target="_blank" href="http://www.leafly.com' + links[i] + '">' + v + '</a></li>');
             });
           });
           // $.post(post_main_addr + , data = {
@@ -301,19 +308,23 @@ $('#home').click(function() {
     load_main();
 });
 
-$('#refresh').click(function() {
-    get_chosen_words();
-    console.log(chosen_words);
-    load_new_words();
-});
-
 $('#leafly_user').click(function() {
     chosen_words = [];
     load_leafly();
 });
 
+// for menu bar functionality
 $(document).on('click','.navbar-collapse.in',function(e) {
     if( $(e.target).is('a') && $(e.target).attr('class') != 'dropdown-toggle' ) {
         $(this).collapse('hide');
+    }
+});
+
+$(document).click(function (event) {
+    var clickover = $(event.target);
+    var $navbar = $(".navbar-collapse");
+    var _opened = $navbar.hasClass("in");
+    if (_opened === true && !clickover.hasClass("navbar-toggle")) {
+        $navbar.collapse('hide');
     }
 });

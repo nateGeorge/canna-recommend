@@ -13,8 +13,18 @@ app = Flask(__name__, static_url_path='')
 
 app.debug = True
 
-# home page
+def clean_recs(recs):
+    '''
+    cleans up recommendation strains for proper presentation
+    '''
+    cln_recs = []
+    for r in recs:
+        temp = [s.capitalize() for s in r.split('-')]
+        temp = ' '.join(temp)
+        temp = re.sub('\ss\s', '\'s ', temp, flags=re.IGNORECASE) # replace a single s with 's
+        cln_recs.append(temp)
 
+    return cln_recs
 
 @app.route('/')
 def index():
@@ -47,12 +57,13 @@ def send_words():
         rec_engine, words, prod_group_dfs, prod_top_words, prod_user='products', size=15)
     # convert to pretty form
     print top
-    top = [re.sub('-', ' ', t) for t in top]
-    print top
-    print toplinks
+    cln_recs = clean_recs(top)
+    print cln_recs
     # need to convert numpy array to list so it is serializable
     toplinks = list(toplinks)
-    resp = flask.Response(json.dumps({'recs': top, 'links':toplinks}))
+    print links
+    print toplinks
+    resp = flask.Response(json.dumps({'recs': cln_recs, 'links':toplinks}))
     resp.headers['Access-Control-Allow-Origin'] = '*'
     return resp
 
@@ -69,6 +80,8 @@ def send_leafly_user():
     k = int(request.form.getlist('k')[0])
 
     recs = glp.make_rec(rec_engine, user[0], users_in_rec, k)
+    cln_recs = clean_recs(recs)
+
     print recs
     if recs is None:
         flask.Response(json.dumps({'recs':None, 'links':None}))
@@ -79,7 +92,7 @@ def send_leafly_user():
     for r in recs:
         links.append(link_dict[r])
 
-    resp = flask.Response(json.dumps({'recs':recs, 'links':links}))
+    resp = flask.Response(json.dumps({'recs':cln_recs, 'links':links}))
     resp.headers['Access-Control-Allow-Origin'] = '*'
     return resp
 
