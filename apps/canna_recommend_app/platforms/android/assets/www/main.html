@@ -1,42 +1,86 @@
+<div id="page_beef">
 <div id="landing" class="container">
     <div class="row text-center">
         <div class="col-md-12">
             <h3 class="text-center animated fadeInDown">Click on some words you like to get strain recommendations</h3>
+            <a id="refresh" class="animated fadeIn" href="javascript:void(0)">
+                 <span class="fa-stack fa-1x">
+                     <i class="fa fa-circle fa-stack-2x"></i>
+                     <i class="fa fa-refresh fa-stack-1x fa-inverse"></i>
+                 </span>Get more words</a>
         </div>
     </div>
 
-<div id="words" class="container center-block">
-  <div class="row text-center center-block">
-  <div class="col-md-4">
-    <div class="list-group words1">
-      <h2 class="words_title"></h2>
-      <a href="#" class="list-group-item">loading...</a>
-      <a href="#" class="list-group-item">loading...</a>
-      <a href="#" class="list-group-item">loading...</a>
+    <div id="words" class="container center-block">
+        <div id="inner_words" class="row text-center center-block">
+            <div class="col-md-4">
+                <div class="list-group words1">
+                    <h2 class="words_title"></h2>
+                    <a href="#" class="list-group-item">loading...</a>
+                    <a href="#" class="list-group-item">loading...</a>
+                    <a href="#" class="list-group-item">loading...</a>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="list-group words2">
+                    <h2 class="words_title"></h2>
+                    <a href="#" class="list-group-item">loading..</a>
+                    <a href="#" class="list-group-item">loading...</a>
+                    <a href="#" class="list-group-item">loading...</a>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="list-group words3">
+                    <h2 class="words_title"></h2>
+                    <a href="#" class="list-group-item">loading...</a>
+                    <a href="#" class="list-group-item">loading...</a>
+                    <a href="#" class="list-group-item">loading...</a>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
-  <div class="col-md-4">
-    <div class="list-group words2">
-      <h2 class="words_title"></h2>
-      <a href="#" class="list-group-item">loading..</a>
-      <a href="#" class="list-group-item">loading...</a>
-      <a href="#" class="list-group-item">loading...</a>
-    </div>
-  </div>
-  <div class="col-md-4">
-    <div class="list-group words3">
-      <h2 class="words_title"></h2>
-      <a href="#" class="list-group-item">loading...</a>
-      <a href="#" class="list-group-item">loading...</a>
-      <a href="#" class="list-group-item">loading...</a>
-    </div>
-  </div>
-</div>
-</div>
 
-<div id="instructions" class="container">
-  <div class="row text-center">
-      <h3 class="text-center animated fadeInDown">When you're ready for recommendations, click the 'explore' button</h3>
+    <div class="container">
+        <div class="row text-center">
+            <div id="instructions">
+                  <div class="col-md-12">
+                    <h3 class="text-center animated fadeInDown">When you're ready for recommendations, click the 'explore' button</h3>
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+  <!-- <footer class="site-footer"> -->
+      <div class="container">
+          <div class="row text-center">
+              <div class="col-md-6 col-sm-6 vcenter">
+                    <h2 class="explore"><a id="explore" class="animated flipInX" href="javascript:void(0)" style="color:green;">
+                      <span class="fa-stack fa-1x">
+                      <i class="fa fa-circle fa-stack-2x"></i>
+                      <i class="fa fa-search fa-stack-1x fa-inverse"></i>
+                    </span>Explore</a></h2>
+                    <div id="spinner" class="fa-stack fa-1x center-block">
+                        <i class="fa fa-circle fa-stack-2x"></i>
+                        <i class="fa fa-circle-o-notch fa-inverse fa-spin"></i>
+                    </div>
+                    <h2><a id="empty_bag" class="animated flipInX" href="javascript:void(0)" style="color:green;">
+                      <span class="fa-stack fa-1x">
+                      <i class="fa fa-circle fa-stack-2x"></i>
+                      <i class="fa fa-undo fa-stack-1x fa-inverse"></i>
+                    </span>Empty bag</a></h2>
+                </div>
+
+        <div class="col-md-6 col-sm-6">
+          <div class="image bagim col-center-block">
+
+            <img src="img/bag.png" class="img-responsive col-center-block" style="max-height: 300px; width:auto;" id="bag_im" alt="bag_of_words">
+            <ul class="bag list-unstyled scrollable-menu col-center-block"></ul>
+          </img>
+
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
-</div>
-</div>
+<!-- </footer> -->

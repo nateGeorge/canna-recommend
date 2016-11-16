@@ -47,9 +47,10 @@ describe('app', function() {
         beforeEach(function() {
             var el = document.getElementById('stage');
             el.innerHTML = ['<div id="deviceready">',
-                            '    <p class="event listening">Listening</p>',
-                            '    <p class="event received">Received</p>',
-                            '</div>'].join('\n');
+                '    <p class="event listening">Listening</p>',
+                '    <p class="event received">Received</p>',
+                '</div>'
+            ].join('\n');
         });
 
         it('should hide the listening element', function() {

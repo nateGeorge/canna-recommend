@@ -109,8 +109,8 @@ div.container {
 }
 
 h2.bag {
-   width: 100%;
-   color: black;
+   /*width: 100%;*/
+   color: white;
 }
 
 h2.explore {
@@ -119,11 +119,8 @@ h2.explore {
 
 ul.bag {
    position: absolute;
-   top: 10%;
-   display: inline-block;
-   left: 50%;
-   transform: translatex(-60%);
-   height: 80%;
+   top: 15%;
+   height: 40%;
    margin-top:30px;
  }
 
@@ -142,11 +139,9 @@ ul.bag {
 
 .bag_words {
     margin: 0;
-    margin-top: -1em;
-    margin-bottom: -1em;
+    margin-top: -2em;
+    margin-bottom: -2em;
     padding-top: 0;
     padding-bottom: 0;
-    float: right;
-    display: inline-block;
     line-height: 1px;
 }

@@ -34,6 +34,7 @@
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/index.html \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/jquery_mobile \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/js \
+/media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/leafly_form.html \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/main.html \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/node_modules \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/package.json \
@@ -44,13 +45,14 @@
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/res \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/spec \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/spec.html \
-/media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/test.html \
+/media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/words.html \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/css/animate.min.css \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/css/app.css \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/css/bootstrap-theme.min.css \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/css/bootstrap-theme.min.css.map \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/css/bootstrap.min.css \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/css/bootstrap.min.css.map \
+/media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/css/font-awesome.css \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/css/font-awesome.min.css \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/css/index.css \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/fonts/fontawesome-webfont.eot \
@@ -64,8 +66,11 @@
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/fonts/glyphicons-halflings-regular.ttf \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/fonts/glyphicons-halflings-regular.woff \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/fonts/glyphicons-halflings-regular.woff2 \
+/media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/img/bag.png \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/img/logo.png \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/img/logo.svg \
+/media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/img/paper-bag_1.gif \
+/media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/img/paper-bag_1.jpg \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/jquery_mobile/jquery.mobile.custom.js \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/jquery_mobile/jquery.mobile.custom.min.js \
 /media/nate/Windows/courses/Galvanize/canna-recommend/apps/canna_recommend_app/platforms/android/assets/www/jquery_mobile/jquery.mobile.custom.structure.css \

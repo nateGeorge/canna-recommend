@@ -1,4 +1,4 @@
-var post_main_addr = 'http://0.0.0.0:10001' //'http://cannadvise.me' //'http://35.161.235.42:10001'; // address with flask api
+var post_main_addr = 'http://cannadvise.me' //'http://35.161.235.42:10001'; // address with flask api 'http://0.0.0.0:10001' //
 
 function add_to_bag(word, i, rec) {
   var index = chosen_words.indexOf(word);
@@ -19,7 +19,7 @@ function add_to_bag(word, i, rec) {
         <i class="fa fa-remove fa-stack-1x" style="color:green"></i> \
       </a> \
     </span> \
-  </h2></li>')
+  </h2></li><br>')
   // delete element when click 'remove'
   $('.fa-remove').click(function () {
     // strip all whitespace
@@ -169,9 +169,10 @@ function getRandomFromBucket() {
 
 var bucket;
 
-function getRandomElements(lest, n = 3) {
+function getRandomElements(lest, n) {
     // takes in a list and returns n random elements
     // without replacement
+    if (n == undefined) {n=3;}
     bucket = [];
     var returnlest = [];
 
@@ -218,15 +219,9 @@ function setWords() {
     }).hide().fadeIn();
 }
 
-function parse_recs(recs) {
-    $(recs).each(function(i, e, a) {
-
-    });
-}
-
 var BASE_URL = 'https://www.leafly.com';
 
-function recommend(chosen_words, callback = null) {
+function recommend(chosen_words, callback) {
     $.post(post_main_addr + '/send_words', data = {
         word_list: chosen_words
     }, function(data, err) {
@@ -234,7 +229,6 @@ function recommend(chosen_words, callback = null) {
         data = JSON.parse(data)
         recs = data['recs'];
         var links = data['links'];
-        var recText = parse_recs(recs);
         $('.list-group-item').each(function(i, v) {
             $(v).text(recs[i]);
             $(v).attr('href', BASE_URL + links[i]);
