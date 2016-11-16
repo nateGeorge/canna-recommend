@@ -123,7 +123,7 @@ for i in range(3):
 
 
 layout = Layout(
-    title='3 KMeans clusters of strains by effects',
+    title='3 KMeans clusters of strains by chemistry',
     scene=Scene(
         xaxis=XAxis(title='PCA Dimension 1'),
         yaxis=YAxis(title='PCA Dimension 2'),
@@ -132,4 +132,21 @@ layout = Layout(
 )
 
 fig = go.Figure(data=traces, layout=layout)
-py.plot(fig, filename='3 KMeans clusters of strains by effects', world_readable=True)
+py.plot(fig, filename='3 KMeans clusters of strains by chemistry', world_readable=True)
+
+groups = []
+for i in range(3):
+    groups.append(product_chem_df[cur_km.labels_ == i])
+    print groups[i].mean()
+
+for c in product_chem_df.columns:
+    #f = plt.figure(figsize=(20, 8))
+    #plt.title(c)
+    for i in range(3):
+        # normalize histogram so they all have the same max
+        tempdata = groups[i][c].values
+        plt.hist(tempdata, bins=50, alpha=0.5, label='group' + str(i), normed=True, color=colors[i])
+    plt.xlabel('% ' + c)
+    plt.legend()
+    # plt.tight_layout()
+    plt.show()
