@@ -26,6 +26,13 @@ If you get an error, you may need to up the ulimit: http://stackoverflow.com/que
 Make sure to run all scripts from the main directory of the project (canna-recommend).  E.g. python2 apps/web_app/app.py
 This is due to relative imports in the script, which I standardized by expecting the script to be run from the home dir.
 
+# Redirecting the port
+To redirect the port you use (10001 here) to 80 (standard browser port it accesses), do:
+`sudo iptables -t nat -A OUTPUT -o lo -p tcp --dport 80 -j REDIRECT --to-port 10001`
+http://askubuntu.com/questions/444729/redirect-port-80-to-8080-and-make-it-work-on-local-machine
+add it to /etc/rc.local to make it persistent on restarts:
+`sudo nano /etc/rc.local`
+
 # Scraping analytical360
 To scrape this site, I created a postgresql database (`CREATE DATABASE arch360;` from within psql),
 then created some tables:
