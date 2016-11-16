@@ -18,7 +18,10 @@ import pandas as pd
 import leafly.data_preprocess as dp
 
 delay_penalty = 1  # time to wait until starting next thread if can't scrape current one
-ua = UserAgent()
+try:
+    ua = UserAgent()
+except:
+    pass
 
 STRAIN_PAGE_FILE = 'leafly/leafly_alphabetic_strains_page_' + \
     datetime.utcnow().isoformat()[:10] + '.pk'
