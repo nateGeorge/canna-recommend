@@ -7,10 +7,14 @@ import analytical360.scrape_360 as sc3
 import string
 import re
 
-def load_data():
+def load_data(full=False):
     # the idea is to find the strains with the most occurances of the word pain
-    df = dp.load_data()
-    products = df.groupby('product')
+    if full:
+        df, prod_df = dp.load_all_full_reviews()
+        products = df.groupby('product')
+    else:
+        df = dp.load_data()
+        products = df.groupby('product')
 
     # first get a dataframe of products and all their reviews concatenated, so
     # we can do tfidf on each products total reviews
@@ -20,7 +24,10 @@ def load_data():
     for p in products:
         review_counts.append(p[1].shape[0])
         product_list.append(p[0])
-        review_list.append(' '.join([r for r in p[1]['review']]))
+        if full:
+            review_list.append(' '.join([r for r in p[1]['full_review']]))
+        else:
+            review_list.append(' '.join([r for r in p[1]['review']]))
 
     product_list = np.array(product_list)
     review_counts = np.array(review_counts)

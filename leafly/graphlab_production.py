@@ -348,6 +348,18 @@ def train_and_save_everything(filename='leafly/10groupsrec_engine.model'):
 
     return rec_engine
 
+def make_rec(rec_engine, user, users_in_rec, k=10):
+    '''
+    makes recommendations for user from rec_engine
+    if user not in engine (i.e. less than 2 reviews or new)
+    returns None
+    '''
+    if user in users_in_rec:
+        recs = rec_engine.recommend([user], k=k)
+        return list(recs['product'])
+    else:
+        return None
+
 if __name__ == "__main__":
     strains = sl.load_current_strains(True)
     # make dict of names to links for sending links to rec page
@@ -358,6 +370,11 @@ if __name__ == "__main__":
 
     rec_engine = load_engine()
     prod_group_dfs, user_group_dfs = load_group_dfs()
+    users_in_rec = []
+    for u in user_group_dfs:
+        users_in_rec.extend(user_group_dfs[u]['user'].values)
+    users_in_rec = set(users_in_rec)
+    pk.dump(users_in_rec, open('leafly/users_in_rec.pk', 'w'), 2)
     test_product_words = ['intense', 'fruity', 'fire']
     prod_top_words, prod_word_counter = load_top_words()
     prod_top_bigrams, prod_bigram_counter = get_top_ngrams(prod_group_dfs)#load_top_words()
