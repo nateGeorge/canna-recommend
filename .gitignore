@@ -16,6 +16,8 @@ pill_ims/*
 !analytical360/data*.pk
 !analytical360/leafly*.pk
 !analytical360/nn*.pk
+!leafly/users*.pk
+!analytial360/chem*.pk
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
