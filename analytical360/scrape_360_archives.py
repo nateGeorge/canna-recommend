@@ -116,6 +116,8 @@ def get_mongo_data():
         names.append(a['name'])
         save_path.append(a['save_path'])
 
+    client.close()
+
     return cannabinoids, terpenes, clean_names, im_sources, isedible, links, names, save_path
 
 if __name__ == "__main__":
