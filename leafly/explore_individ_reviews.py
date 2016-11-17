@@ -65,6 +65,7 @@ def load_all_full_reviews():
 
     # one-hot encode effects
     unique_effects = set(np.unique(effects_list))
+    pk.dump(unique_effects, open('leafly/unique_effects.pk', 'w'), 2)
     effect_dict = {}
     for i, r in full_df.iterrows():
         temp_ef = set()
@@ -85,6 +86,7 @@ def load_all_full_reviews():
 
     # one-hot encode flavors
     unique_flavors = set(np.unique(flavors_list))
+    pk.dump(unique_flavors, open('leafly/unique_flavors.pk', 'w'), 2)
     flavor_dict = {}
     for i, r in full_df.iterrows():
         temp_fl = set()
@@ -499,97 +501,97 @@ def cluster_by_effects_flavors():
     wmd
     '''
 
+if __name__ == "__main__":
+    # check out users with more than 10 reviews, and not anonymous
+    user_group = full_df.groupby('user').count()
+    # about 42k with more than 10 reviews, 67 with more than 52
+    top_users = set(user_group[user_group['full_review'] >= 5].index.values)
+    top_df = full_df[full_df['user'].isin(top_users)]
+    top_df = top_df[top_df['user'] != 'Anonymous']
 
-# check out users with more than 10 reviews, and not anonymous
-user_group = full_df.groupby('user').count()
-# about 42k with more than 10 reviews, 67 with more than 52
-top_users = set(user_group[user_group['full_review'] >= 5].index.values)
-top_df = full_df[full_df['user'].isin(top_users)]
-top_df = top_df[top_df['user'] != 'Anonymous']
-
-# dropped a few
-top_df.drop_duplicates(subset=[u'product', u'rating', u'full_review', u'user'])
-
-
-# cluster by tf-idf of full reviews
-# first just get tfidf vectors
-df, prod_review_df = sfw.load_data(full=True)
-tfvect, vect_words, review_vects = nl.lemmatize_tfidf(prod_review_df, max_features=1000, ngram_range=(1, 2))
-tfvect2, vect_words2, review_vects2 = nl.lemmatize_tfidf(prod_review_df, max_features=1000, ngram_range=(2, 2))
-
-# cluster again by full review vects
-pca_r= PCA(n_components=10)
-review_pca = pca_r.fit_transform(review_vects)
-
-num_kmeans = 10
-kmeanses = []
-scores = []
-sil_scores = []
-start = time.time()
-for i in range(2, num_kmeans):
-    km = KMeans(n_clusters=i, n_jobs=-1, random_state=42)
-    kmeanses.append(km)
-    km.fit(review_pca)
-    scores.append(-km.score(review_pca)) # withi-cluster sum of squares
-    labels = km.labels_
-    sil_scores.append(silhouette_score(review_vects, labels, metric='euclidean'))
-
-endTime = time.time()
-print 'took', endTime - start, 'seconds'
-
-# look at silhouette_score
-sil_scores = []
-for km in kmeanses:
-    labels = km.labels_
-    sil_scores.append(silhouette_score(review_vects, labels, metric='euclidean'))
-
-# shit...looks like 2 clusters is best, with 200 or full tfidf
-plt.scatter(range(2, num_kmeans), sil_scores)
-plt.show()
-
-cur_km = kmeanses[1]
-traces = []
-for i in range(3):
-    x, y, z = review_pca[cur_km.labels_ == i, 0], review_pca[cur_km.labels_ == i, 1], review_pca[cur_km.labels_ == i, 3]
-    traces.append(go.Scatter3d(
-        x=x,
-        y=y,
-        z=z,
-        mode='markers',
-        marker=dict(
-            size=6,
-#             line=dict(
-#                 color='rgba(217, 217, 217, 0.14)',
-#                 width=0.2
-#             ),
-            opacity=0.5
-        ),
-        name='cluster ' + str(i)
-    ))
+    # dropped a few
+    top_df.drop_duplicates(subset=[u'product', u'rating', u'full_review', u'user'])
 
 
-layout = Layout(
-    title='3 KMeans clusters of strains',
-    scene=Scene(
-        xaxis=XAxis(title='PCA Dimension 1'),
-        yaxis=YAxis(title='PCA Dimension 2'),
-        zaxis=ZAxis(title='PCA Dimension 3')
+    # cluster by tf-idf of full reviews
+    # first just get tfidf vectors
+    df, prod_review_df = sfw.load_data(full=True)
+    tfvect, vect_words, review_vects = nl.lemmatize_tfidf(prod_review_df, max_features=1000, ngram_range=(1, 2))
+    tfvect2, vect_words2, review_vects2 = nl.lemmatize_tfidf(prod_review_df, max_features=1000, ngram_range=(2, 2))
+
+    # cluster again by full review vects
+    pca_r= PCA(n_components=10)
+    review_pca = pca_r.fit_transform(review_vects)
+
+    num_kmeans = 10
+    kmeanses = []
+    scores = []
+    sil_scores = []
+    start = time.time()
+    for i in range(2, num_kmeans):
+        km = KMeans(n_clusters=i, n_jobs=-1, random_state=42)
+        kmeanses.append(km)
+        km.fit(review_pca)
+        scores.append(-km.score(review_pca)) # withi-cluster sum of squares
+        labels = km.labels_
+        sil_scores.append(silhouette_score(review_vects, labels, metric='euclidean'))
+
+    endTime = time.time()
+    print 'took', endTime - start, 'seconds'
+
+    # look at silhouette_score
+    sil_scores = []
+    for km in kmeanses:
+        labels = km.labels_
+        sil_scores.append(silhouette_score(review_vects, labels, metric='euclidean'))
+
+    # shit...looks like 2 clusters is best, with 200 or full tfidf
+    plt.scatter(range(2, num_kmeans), sil_scores)
+    plt.show()
+
+    cur_km = kmeanses[1]
+    traces = []
+    for i in range(3):
+        x, y, z = review_pca[cur_km.labels_ == i, 0], review_pca[cur_km.labels_ == i, 1], review_pca[cur_km.labels_ == i, 3]
+        traces.append(go.Scatter3d(
+            x=x,
+            y=y,
+            z=z,
+            mode='markers',
+            marker=dict(
+                size=6,
+    #             line=dict(
+    #                 color='rgba(217, 217, 217, 0.14)',
+    #                 width=0.2
+    #             ),
+                opacity=0.5
+            ),
+            name='cluster ' + str(i)
+        ))
+
+
+    layout = Layout(
+        title='3 KMeans clusters of strains',
+        scene=Scene(
+            xaxis=XAxis(title='PCA Dimension 1'),
+            yaxis=YAxis(title='PCA Dimension 2'),
+            zaxis=ZAxis(title='PCA Dimension 3')
+        )
     )
-)
 
-fig = go.Figure(data=traces, layout=layout)
-py.plot(fig, filename='3 KMeans clusters of strains', world_readable=True)
+    fig = go.Figure(data=traces, layout=layout)
+    py.plot(fig, filename='3 KMeans clusters of strains', world_readable=True)
 
-# lets find top grams in each group
-vect_words = np.array(tfvect.get_feature_names())
-groups = []
-for i in range(3):
-    names = prod_review_df[cur_km.labels_ == i]['product']
-    groups.append(prod_review_df[cur_km.labels_ == i])
-    words = review_vects[cur_km.labels_ == i, :]
-    avg_vects = words.mean(axis=0)
-    idx = np.argsort(avg_vects)[::-1]
-    print 'group', i
-    print zip(avg_vects[idx][:10], vect_words[idx][:10])
-    print ''
-    print ''
+    # lets find top grams in each group
+    vect_words = np.array(tfvect.get_feature_names())
+    groups = []
+    for i in range(3):
+        names = prod_review_df[cur_km.labels_ == i]['product']
+        groups.append(prod_review_df[cur_km.labels_ == i])
+        words = review_vects[cur_km.labels_ == i, :]
+        avg_vects = words.mean(axis=0)
+        idx = np.argsort(avg_vects)[::-1]
+        print 'group', i
+        print zip(avg_vects[idx][:10], vect_words[idx][:10])
+        print ''
+        print ''
