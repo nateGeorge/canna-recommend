@@ -18,6 +18,13 @@ pill_ims/*
 !analytical360/nn*.pk
 !leafly/users*.pk
 !analytial360/chem*.pk
+!leafly/review_tfidf_dists1.pk
+!leafly/review_tfidf_dists2.pk
+!leafly/review_vects_full.pk
+!leafly/review_vects2_full.pk
+!leafly/vect_words1.pk
+!leafy/vect_words2.pk
+!leafly/tfidf_strain_names.pk
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
