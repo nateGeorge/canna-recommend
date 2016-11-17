@@ -307,6 +307,22 @@ $('#leafly_user').click(function() {
     load_leafly();
 });
 
+$('#science').click(function() {
+    chosen_words = [];
+    $('#page_beef').fadeOut(function() {
+      $('.main_page').load('science.html', complete = function() {
+      });
+      });
+});
+
+$('#contact').click(function() {
+    chosen_words = [];
+    $('#page_beef').fadeOut(function() {
+      $('.main_page').load('contact.html', complete = function() {
+      });
+    });
+});
+
 // for menu bar functionality
 $(document).on('click','.navbar-collapse.in',function(e) {
     if( $(e.target).is('a') && $(e.target).attr('class') != 'dropdown-toggle' ) {
