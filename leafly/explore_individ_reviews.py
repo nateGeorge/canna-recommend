@@ -516,8 +516,11 @@ if __name__ == "__main__":
     # cluster by tf-idf of full reviews
     # first just get tfidf vectors
     df, prod_review_df = sfw.load_data(full=True)
-    tfvect, vect_words, review_vects = nl.lemmatize_tfidf(prod_review_df, max_features=1000, ngram_range=(1, 2))
-    tfvect2, vect_words2, review_vects2 = nl.lemmatize_tfidf(prod_review_df, max_features=1000, ngram_range=(2, 2))
+    # originally used 1000 for max features
+    # tfvect, vect_words, review_vects = nl.lemmatize_tfidf(prod_review_df, max_features=1000, ngram_range=(1, 2))
+    # tfvect2, vect_words2, review_vects2 = nl.lemmatize_tfidf(prod_review_df, max_features=1000, ngram_range=(2, 2))
+    tfvect, vect_words, review_vects = nl.lemmatize_tfidf(prod_review_df, max_features=10000, ngram_range=(1, 2))
+    tfvect2, vect_words2, review_vects2 = nl.lemmatize_tfidf(prod_review_df, max_features=10000, ngram_range=(2, 2))
 
     # cluster again by full review vects
     pca_r= PCA(n_components=10)
@@ -580,7 +583,7 @@ if __name__ == "__main__":
     )
 
     fig = go.Figure(data=traces, layout=layout)
-    py.plot(fig, filename='3 KMeans clusters of strains', world_readable=True)
+    py.plot(fig, filename='3 KMeans clusters of strains -- 10k tfidf', world_readable=True)
 
     # lets find top grams in each group
     vect_words = np.array(tfvect.get_feature_names())

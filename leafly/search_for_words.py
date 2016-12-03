@@ -3,9 +3,10 @@ import leafly.data_preprocess as dp
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import analytical360.scrape_360 as sc3
+#import analytical360.scrape_360 as sc3
 import string
 import re
+from textblob import TextBlob # need this for sentiment analysis
 
 def load_data(full=False):
     # the idea is to find the strains with the most occurances of the word pain
@@ -35,10 +36,11 @@ def load_data(full=False):
 
     return df, prod_review_df
 
-def get_top_strains(df, word='pain', plot=False):
+def get_top_strains(df, word='pain', plot=False, tfvect=None, review_vects=None, vect_words=None):
     product_list = df['product'].values
     review_counts = df['review_counts'].values
-    tfvect, vect_words, review_vects = nl.lemmatize_tfidf(df, max_df=1.0)
+    if tfvect is None and vect_words is None and review_vects is None:
+        tfvect, vect_words, review_vects = nl.lemmatize_tfidf(df, max_df=1.0)
     try:
         pain_idx = np.where(vect_words == word)[0][0]
     except:
@@ -54,48 +56,88 @@ def get_top_strains(df, word='pain', plot=False):
         plt.hist(review_vects[:, pain_idx], bins=50)
         plt.show()
 
-    return vect_words, review_vects, max_pain_sort
+    top_strains = zip(product_list[max_pain_sort], review_counts[max_pain_sort])
+
+    return vect_words, review_vects, max_pain_sort, top_strains
 
 
 if __name__ == "__main__":
-    df, prod_review_df = load_data()
+    df, prod_review_df = load_data(full=True)
+    # review_vects_full = pk.load(open('leafly/review_vects_full.pk'))
+    # vect_words = pk.load(open('leafly/vect_words1.pk'))
+    tfvect, vect_words, review_vects = nl.lemmatize_tfidf(prod_review_df, max_df=1.0)
+    v, r, m, top_strains = get_top_strains(prod_review_df,
+                                word='ptsd',
+                                review_vects=review_vects,
+                                vect_words=vect_words,
+                                tfvect=tfvect)
 
-    clean_leafly_names = []
-    for n in prod_review_df['product']:
-        clean_leafly_names.append(re.sub('[ + ' + string.punctuation + '\s]+', '', n).lower())
+    best_ptsd = []
+    please_end = False
+    for s in top_strains:
+        print s[0]
+        if please_end:
+            break
+        sent_df = nl.get_sents_with_words(df[df['product'] == s[0]], 'ptsd')
+        if sent_df['sent_count'].sum() > 5:
+            print 'adding...'
+            print '!!!!!!!!!!!!!!!!!!!!!!!!!!11'
+            sents = ''
+            for i, c in sent_df.iterrows():
+                sents += ' '.join(c['word_sentence'])
 
-    prod_review_df['clean_name'] = clean_leafly_names
-
-    leafly_name_set = set(clean_leafly_names)
-
-    cannabinoids, terpenes, no_imgs, im_sources, names = sc3.load_raw_scrape()
-
-    #standardize names for comparing whats in analytical360 and whats from leafly
-    clean_360_names = []
-    for n in names:
-        clean_360_names.append(re.sub('[ + ' + string.punctuation + '\s]+', '', n).lower())
-
-    a360_name_set = set(clean_360_names)
-
-    exact_matches = leafly_name_set.intersection(a360_name_set)
-
-    match_df = prod_review_df[prod_review_df['clean_name'].isin(exact_matches)]
-
-    key_terms = ['pain', 'anxiety', 'sleep', 'depression']
-    vect_words, review_vects, max_pain_sort = [], [], []
-    for k in key_terms:
-        v, r, m = get_top_strains(match_df, word=k)
-        vect_words.append(v)
-        review_vects.append(r)
-        max_pain_sort.append(m)
+            temp = TextBlob(sents)
+            # if temp.sentiment[0] > -1: # range from -1 to 1 but cadillac-purple
+            # had 2 negatives and one positive and score 0.475
+            best_ptsd.append((s[0], s[1], temp.sentiment[0]))
+            if len(best_ptsd) > 5:
+                please_end = True
 
 
-    # was going to filter products by which have been tested,
-    # but just do the get_top_strains on a pre-filtered DF
-    # topNames = prod_review_df['clean_name'].iloc[max_pain_sort]
-    # topNamesChem = topNames.copy()
-    # keepNames = []
-    # for n in topNames.iterrows():
-    #     name = n['clean_name']
-    #     if name in exact_matches:
-    #         keepNames.append()
+
+    sent_df = nl.get_sents_with_words(df[df['product'] == 'cadillac-purple'], 'ptsd')
+    sents = ''
+    for i, c in sent_df.iterrows():
+        sents += ' '.join(c['word_sentence'])
+
+    do_lots_of_stuff = False
+    if do_lots_of_stuff:
+        clean_leafly_names = []
+        for n in prod_review_df['product']:
+            clean_leafly_names.append(re.sub('[ + ' + string.punctuation + '\s]+', '', n).lower())
+
+        prod_review_df['clean_name'] = clean_leafly_names
+
+        leafly_name_set = set(clean_leafly_names)
+
+        cannabinoids, terpenes, no_imgs, im_sources, names = sc3.load_raw_scrape()
+
+        #standardize names for comparing whats in analytical360 and whats from leafly
+        clean_360_names = []
+        for n in names:
+            clean_360_names.append(re.sub('[ + ' + string.punctuation + '\s]+', '', n).lower())
+
+        a360_name_set = set(clean_360_names)
+
+        exact_matches = leafly_name_set.intersection(a360_name_set)
+
+        match_df = prod_review_df[prod_review_df['clean_name'].isin(exact_matches)]
+
+        key_terms = ['pain', 'anxiety', 'sleep', 'depression']
+        vect_words, review_vects, max_pain_sort = [], [], []
+        for k in key_terms:
+            v, r, m = get_top_strains(match_df, word=k)
+            vect_words.append(v)
+            review_vects.append(r)
+            max_pain_sort.append(m)
+
+
+        # was going to filter products by which have been tested,
+        # but just do the get_top_strains on a pre-filtered DF
+        # topNames = prod_review_df['clean_name'].iloc[max_pain_sort]
+        # topNamesChem = topNames.copy()
+        # keepNames = []
+        # for n in topNames.iterrows():
+        #     name = n['clean_name']
+        #     if name in exact_matches:
+        #         keepNames.append()

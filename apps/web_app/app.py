@@ -28,6 +28,10 @@ def clean_recs(recs):
 
 @app.route('/')
 def index():
+    user_id = request.cookies.get('cannadviseme')
+    print 'cookie:', user_id
+    if user_id is None:
+        response.set_cookie('YourSessionCookie', user.id)
     return app.send_static_file('app.html')
 
 # returns list of words in different groups as dict

@@ -433,6 +433,34 @@ def get_sents_with_sleep(df):
 
     return new_df
 
+def get_sents_with_words(df, word):
+    '''
+    takes dataframe with reviews and product names and returns dataframe with
+    sentence with 'word' appended
+    '''
+    # first ensure that our indices aren't going to screw things up
+    new_df = df.copy()
+    new_df = new_df.reset_index(drop=True)
+    new_df['word_sentence'] = [[] for i in range(new_df.shape[0])]
+    new_df['sent_count'] = 0
+    punct_no_per = re.sub('\.', '', string.punctuation)
+    for i, r in new_df.iterrows():
+        #print i, new_df.shape[0]
+        sentences = []
+        scount = 0
+        sents = list(parser(r['review']).sents)
+        for s in sents:
+            s = s.string.strip()
+            res = re.search('.*' + word + '.*', s, re.IGNORECASE)
+            if res:
+                sentences.append(res.group(0))
+                scount += 1
+
+        new_df.set_value(i, 'word_sentence', sentences)
+        new_df.set_value(i, 'sent_count', scount)
+
+    return new_df
+
 
 if __name__=="__main__":
     prod_group_dfs, user_group_dfs = load_group_dfs()
