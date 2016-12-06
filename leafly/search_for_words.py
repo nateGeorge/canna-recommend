@@ -74,6 +74,7 @@ if __name__ == "__main__":
 
     best_ptsd = []
     please_end = False
+    sentiment_dict = {}
     for s in top_strains:
         print s[0]
         if please_end:
@@ -84,16 +85,19 @@ if __name__ == "__main__":
             print '!!!!!!!!!!!!!!!!!!!!!!!!!!11'
             sents = ''
             for i, c in sent_df.iterrows():
-                sents += ' '.join(c['word_sentence'])
+                # separate sentences by something unique so we can split them again later
+                sents += '||--||'.join(c['word_sentence'])
 
             temp = TextBlob(sents)
             # if temp.sentiment[0] > -1: # range from -1 to 1 but cadillac-purple
             # had 2 negatives and one positive and score 0.475
+            sentiment_dict.setdefault('strain', []).append(s[0])
+            sentiment_dict.setdefault('num_reviews', []).append(s[1])
+            sentiment_dict.setdefault('sentiment_score', []).append(temp.sentiment[0])
+            sentiment_dict.setdefault('review_text', []).append(sents)
             best_ptsd.append((s[0], s[1], temp.sentiment[0]))
-            if len(best_ptsd) > 5:
-                please_end = True
 
-
+    print sorted(best_ptsd, key=lambda x: x[2], reverse=True)
 
     sent_df = nl.get_sents_with_words(df[df['product'] == 'cadillac-purple'], 'ptsd')
     sents = ''
