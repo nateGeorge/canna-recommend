@@ -73,10 +73,15 @@ def get_top_strains(df, word='pain', plot=False, tfvect=None, review_vects=None,
     return vect_words, review_vects, max_pain_sort, top_strains
 
 
-def get_top_strains_word_sentiment(prod_review_df, word='ptsd', min_sents=1):
+def get_top_strains_word_sentiment(prod_review_df, word='ptsd', min_sents=1,
+                                    early_stop=False):
     '''
     gets all strains that contain the word at least min_sents number of times
-    returns dataframe of product, review, sentiment,
+    returns
+    early_stop will stop after 5 strains with the word have been found
+    dataframe of product, review, sentiment of concatenated reviews
+    dataframe of product, review sentence, sentiment of sentence
+
     '''
     if not os.path.exists('leafly/tfvect.pk'):
         tfvect, vect_words, review_vects = nl.lemmatize_tfidf(prod_review_df, max_df=1.0)
@@ -95,6 +100,7 @@ def get_top_strains_word_sentiment(prod_review_df, word='ptsd', min_sents=1):
     please_end = False
     sentiment_dict = {}
     sentence_df = None
+    early_counter = 0
     for s in top_strains:
         if please_end:
             break
@@ -105,6 +111,7 @@ def get_top_strains_word_sentiment(prod_review_df, word='ptsd', min_sents=1):
             sentence_df = sentence_df.append(sent_df)
 
         if sent_df['sent_count'].sum() > min_sents:
+            early_counter += 1
             print '[HAS WORD]: adding', s[0]
             sents = ''
             for i, c in sent_df.iterrows():
@@ -119,11 +126,15 @@ def get_top_strains_word_sentiment(prod_review_df, word='ptsd', min_sents=1):
             sentiment_dict.setdefault('sentiment_score', []).append(temp.sentiment[0])
             sentiment_dict.setdefault('review_text', []).append(sents)
             best_ptsd.append((s[0], s[1], temp.sentiment[0]))
+            if early_stop and early_counter == 5:
+                break
         else:
             print s[0]
 
     print 'top 10 strains:', sorted(best_ptsd, key=lambda x: x[2], reverse=True)[:10]
-    sentence_df['sentiment_score'] = sentence_df['word_sentence'].apply(lambda x: get_sentiment(x))
+    sentence_df = sentence_df[sentence_df['sent_count'] >= 1]
+    sentence_df['first_sentence'] = sentence_df['word_sentence'].apply(lambda x: x[0])
+    sentence_df['sentiment_score'] = sentence_df['first_sentence'].apply(lambda x: get_sentiment(x))
 
     return pd.DataFrame(sentiment_dict), sentence_df
 
@@ -139,7 +150,7 @@ if __name__ == "__main__":
     # review_vects_full = pk.load(open('leafly/review_vects_full.pk'))
     # vect_words = pk.load(open('leafly/vect_words1.pk'))
 
-    senti_df, sent_df = get_top_strains_word_sentiment(prod_review_df)
+    senti_df, sent_df = get_top_strains_word_sentiment(prod_review_df, early_stop=True)
     # makes full tfidf vectors
     makeFull = False
     if makeFull:
