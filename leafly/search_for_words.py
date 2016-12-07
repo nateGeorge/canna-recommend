@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import string
 import re
 from textblob import TextBlob # need this for sentiment analysis
+import cPickle as pk
+import os
 
 def load_data(full=False):
     # the idea is to find the strains with the most occurances of the word pain
@@ -37,6 +39,16 @@ def load_data(full=False):
     return df, prod_review_df
 
 def get_top_strains(df, word='pain', plot=False, tfvect=None, review_vects=None, vect_words=None):
+    '''
+    takes a dataframe with products, reviews, and review counts,
+    and sorts by word in tfidf of reviews for each strain
+
+    returns tuple of:
+        list of vectorized words
+        list of tfidf vectors
+        sorted review_vector by the word
+        top strains: a tuple of product (strain) and total review counts
+    '''
     product_list = df['product'].values
     review_counts = df['review_counts'].values
     if tfvect is None and vect_words is None and review_vects is None:
@@ -61,11 +73,18 @@ def get_top_strains(df, word='pain', plot=False, tfvect=None, review_vects=None,
     return vect_words, review_vects, max_pain_sort, top_strains
 
 
-if __name__ == "__main__":
-    df, prod_review_df = load_data(full=True)
-    # review_vects_full = pk.load(open('leafly/review_vects_full.pk'))
-    # vect_words = pk.load(open('leafly/vect_words1.pk'))
-    tfvect, vect_words, review_vects = nl.lemmatize_tfidf(prod_review_df, max_df=1.0)
+def get_top_strains_word_sentiment(prod_review_df, word='ptsd', min_sents=1):
+    '''
+    gets all strains that contain the word at least min_sents number of times
+    returns dataframe of product, review, sentiment,
+    '''
+    if not os.path.exists('leafly/tfvect.pk'):
+        tfvect, vect_words, review_vects = nl.lemmatize_tfidf(prod_review_df, max_df=1.0)
+    else:
+        tfvect = pk.load(open('leafly/tfvect.pk'))
+        vect_words = pk.load(open('leafly/vect_words.pk'))
+        review_vects = pk.load(open('leafly/review_vects.pk'))
+
     v, r, m, top_strains = get_top_strains(prod_review_df,
                                 word='ptsd',
                                 review_vects=review_vects,
@@ -75,18 +94,22 @@ if __name__ == "__main__":
     best_ptsd = []
     please_end = False
     sentiment_dict = {}
+    sentence_df = None
     for s in top_strains:
-        print s[0]
         if please_end:
             break
         sent_df = nl.get_sents_with_words(df[df['product'] == s[0]], 'ptsd')
-        if sent_df['sent_count'].sum() > 5:
-            print 'adding...'
-            print '!!!!!!!!!!!!!!!!!!!!!!!!!!11'
+        if sentence_df is None:
+            sentence_df = sent_df
+        else:
+            sentence_df = sentence_df.append(sent_df)
+
+        if sent_df['sent_count'].sum() > min_sents:
+            print '[HAS WORD]: adding', s[0]
             sents = ''
             for i, c in sent_df.iterrows():
                 # separate sentences by something unique so we can split them again later
-                sents += '||--||'.join(c['word_sentence'])
+                sents += '||--||' + ' '.join(c['word_sentence'])
 
             temp = TextBlob(sents)
             # if temp.sentiment[0] > -1: # range from -1 to 1 but cadillac-purple
@@ -96,16 +119,43 @@ if __name__ == "__main__":
             sentiment_dict.setdefault('sentiment_score', []).append(temp.sentiment[0])
             sentiment_dict.setdefault('review_text', []).append(sents)
             best_ptsd.append((s[0], s[1], temp.sentiment[0]))
+        else:
+            print s[0]
 
-    print sorted(best_ptsd, key=lambda x: x[2], reverse=True)
+    print 'top 10 strains:', sorted(best_ptsd, key=lambda x: x[2], reverse=True)[:10]
+    sentence_df['sentiment_score'] = sentence_df['word_sentence'].apply(lambda x: get_sentiment(x))
 
-    sent_df = nl.get_sents_with_words(df[df['product'] == 'cadillac-purple'], 'ptsd')
-    sents = ''
-    for i, c in sent_df.iterrows():
-        sents += ' '.join(c['word_sentence'])
+    return pd.DataFrame(sentiment_dict), sentence_df
+
+def get_sentiment(sentence):
+    '''
+    gets sentiment from sentence using textblob
+    '''
+    blob = TextBlob(sentence)
+    return blob.sentiment[0]
+
+if __name__ == "__main__":
+    df, prod_review_df = load_data(full=True)
+    # review_vects_full = pk.load(open('leafly/review_vects_full.pk'))
+    # vect_words = pk.load(open('leafly/vect_words1.pk'))
+
+    senti_df, sent_df = get_top_strains_word_sentiment(prod_review_df)
+    # makes full tfidf vectors
+    makeFull = False
+    if makeFull:
+        tfvect, vect_words, review_vects = nl.lemmatize_tfidf(prod_review_df, max_df=1.0)
+        pk.dump(tfvect, open('leafly/tfvect.pk', 'w'), 2)
+        pk.dump(vect_words, open('leafly/vect_words.pk', 'w'), 2)
+        pk.dump(review_vects, open('leafly/review_vects.pk', 'w'), 2)
+
 
     do_lots_of_stuff = False
     if do_lots_of_stuff:
+        sent_df = nl.get_sents_with_words(df[df['product'] == 'cadillac-purple'], 'ptsd')
+        sents = ''
+        for i, c in sent_df.iterrows():
+            sents += ' '.join(c['word_sentence'])
+
         clean_leafly_names = []
         for n in prod_review_df['product']:
             clean_leafly_names.append(re.sub('[ + ' + string.punctuation + '\s]+', '', n).lower())
