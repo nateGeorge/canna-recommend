@@ -9,6 +9,8 @@ import re
 from textblob import TextBlob # need this for sentiment analysis
 import cPickle as pk
 import os
+import easygui as eg
+from time import time
 
 def load_data(full=False):
     # the idea is to find the strains with the most occurances of the word pain
@@ -74,15 +76,23 @@ def get_top_strains(df, word='pain', plot=False, tfvect=None, review_vects=None,
 
 
 def get_top_strains_word_sentiment(prod_review_df, word='ptsd', min_sents=1,
-                                    early_stop=False):
+                                    early_stop=False, pickle=True):
     '''
     gets all strains that contain the word at least min_sents number of times
     returns
-    early_stop will stop after 5 strains with the word have been found
+    args:
+    prod_review_df -- dataframe with product reviews; must have 'prodect' and 'review' columns
+    word -- the word to look for in the reviews
+    min_sents -- the minimum number of times the word appears in reviews
+    early_stop -- if True, will stop after 5 strains with the word have been found
+    pickle -- if True, will save results in a pickled file for faster loading next time;
+            and will load from pickle file if available
+    returns:
     dataframe of product, review, sentiment of concatenated reviews
     dataframe of product, review sentence, sentiment of sentence
 
     '''
+    start_time = time()
     if not os.path.exists('leafly/tfvect.pk'):
         tfvect, vect_words, review_vects = nl.lemmatize_tfidf(prod_review_df, max_df=1.0)
     else:
@@ -136,6 +146,7 @@ def get_top_strains_word_sentiment(prod_review_df, word='ptsd', min_sents=1,
     sentence_df['first_sentence'] = sentence_df['word_sentence'].apply(lambda x: x[0])
     sentence_df['sentiment_score'] = sentence_df['first_sentence'].apply(lambda x: get_sentiment(x))
 
+    print 'took', (time() - start_time) / 1000., 'seconds'
     return pd.DataFrame(sentiment_dict), sentence_df
 
 def get_sentiment(sentence):
@@ -145,12 +156,37 @@ def get_sentiment(sentence):
     blob = TextBlob(sentence)
     return blob.sentiment[0]
 
+def score_sentiments(df):
+    '''
+    takes a dataframe with product, review text in it
+    displays one review text at a time, user rates sentiment -1, 0, or 1
+    '''
+    print '''press 1 to rate sentence as positive sentiment,
+            0 as negative,
+            and . as neutral.
+            Press enter to finish that entry.
+            '''
+    ratings = []
+    for i, c in df.iterrows():
+        print ''
+        print c['first_sentence']
+        rating = raw_input()
+        ratings.append(rating)
+
+    return ratings
+
+
+
+
+
 if __name__ == "__main__":
     df, prod_review_df = load_data(full=True)
     # review_vects_full = pk.load(open('leafly/review_vects_full.pk'))
     # vect_words = pk.load(open('leafly/vect_words1.pk'))
 
-    senti_df, sent_df = get_top_strains_word_sentiment(prod_review_df, early_stop=True)
+    # gets top words with default args, 'ptsd' and pickles it
+    senti_df, sent_df = get_top_strains_word_sentiment(prod_review_df)#, early_stop=True)
+
     # makes full tfidf vectors
     makeFull = False
     if makeFull:

@@ -1,4 +1,4 @@
-var post_main_addr = 'http://0.0.0.0:10001' // 'http://cannadvise.me' //'http://35.161.235.42:10001'; // address with flask api 
+var post_main_addr = 'http://0.0.0.0:10001' // 'http://cannadvise.me' //'http://35.161.235.42:10001'; // address with flask api
 
 function add_to_bag(word, i, rec) {
   var index = chosen_words.indexOf(word);

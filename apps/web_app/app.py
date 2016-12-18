@@ -7,7 +7,7 @@ import leafly.scrape_leafly as sl
 import json
 import cPickle as pk
 import re
-from flask import Flask, request
+from flask import Flask, request, make_response
 import flask
 app = Flask(__name__, static_url_path='')
 
@@ -31,8 +31,11 @@ def index():
     user_id = request.cookies.get('cannadviseme')
     print 'cookie:', user_id
     if user_id is None:
-        response.set_cookie('YourSessionCookie', user.id)
-    return app.send_static_file('app.html')
+        return app.send_static_file('app.html')
+
+    resp = make_response(render_template('app.html'))
+    resp.set_cookie('cannadviseme', user_id)
+
 
 # returns list of words in different groups as dict
 
@@ -99,6 +102,12 @@ def send_leafly_user():
     resp = flask.Response(json.dumps({'recs':cln_recs, 'links':links}))
     resp.headers['Access-Control-Allow-Origin'] = '*'
     return resp
+
+
+@app.route('/get_top_strains', methods=['POST'])
+def get_top_strains():
+    print request
+    get_top_strains_word_sentiment
 
 
 if __name__ == '__main__':
