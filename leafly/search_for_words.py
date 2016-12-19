@@ -76,7 +76,7 @@ def get_top_strains(df, word='pain', plot=False, tfvect=None, review_vects=None,
 
 
 def get_top_strains_word_sentiment(prod_review_df, word='ptsd', min_sents=1,
-                                    early_stop=False, pickle=True):
+                                    early_stop=False, yes_pickle=True):
     '''
     gets all strains that contain the word at least min_sents number of times
     returns
@@ -92,6 +92,14 @@ def get_top_strains_word_sentiment(prod_review_df, word='ptsd', min_sents=1,
     dataframe of product, review sentence, sentiment of sentence
 
     '''
+    if yes_pickle:
+        if os.path.exists(word + '_senti_df.pk'):
+            senti_df = pk.load(open(word + '_senti_df.pk'))
+            sent_df = pk.load(open(word + '_sent_df.pk'))
+            return senti_df, sent_df
+        else:
+            print 'file doesn\'t exist, creating from scratch...'
+
     start_time = time()
     if not os.path.exists('leafly/tfvect.pk'):
         tfvect, vect_words, review_vects = nl.lemmatize_tfidf(prod_review_df, max_df=1.0)
@@ -147,6 +155,10 @@ def get_top_strains_word_sentiment(prod_review_df, word='ptsd', min_sents=1,
     sentence_df['sentiment_score'] = sentence_df['first_sentence'].apply(lambda x: get_sentiment(x))
 
     print 'took', (time() - start_time) / 1000., 'seconds'
+    if yes_pickle:
+        pk.dump(senti_df, open(word + '_senti_df.pk', 'w'))
+        pk.dump(sent_df, open(word + '_sent_df.pk', 'w'))
+    
     return pd.DataFrame(sentiment_dict), sentence_df
 
 def get_sentiment(sentence):
