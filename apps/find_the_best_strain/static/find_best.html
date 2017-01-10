@@ -43,7 +43,7 @@
                 <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
                     <span class="sr-only">Toggle navigation</span> Menu <i class="fa fa-bars"></i>
                 </button>
-                <a class="navbar-brand page-scroll" href="#page-top">CannadviseMe</a>
+                <a class="navbar-brand" href="/index.html">CannadviseMe</a>
             </div>
 
             <!-- Collect the nav links, forms, and other content for toggling -->
@@ -53,10 +53,10 @@
                         <a class="page-scroll" href="#about">About</a>
                     </li>
                     <li>
-                        <a class="page-scroll" href="#services">Old Site</a>
+                        <a href="#services">Old Site</a>
                     </li>
                     <li>
-                        <a class="page-scroll" href="#portfolio">For Leafly Users</a>
+                        <a href="#portfolio">For Leafly Users</a>
                     </li>
                     <li>
                         <a class="page-scroll" href="#contact">Contact</a>
@@ -70,14 +70,22 @@
 
     <header>
         <div class="header-content">
-            <div class="header-content-inner">
-                <a class="btn btn-primary btn-xl" href="/find_best.html">
-                <h1 id="homeHeading">Find the best cannabis for<br />
-                <ul style="list-style-type: none; display:inline-block; text-align: center; margin: auto; padding: 0;" id="js-rotating">
-                </ul><br /></h1></a>
-                <hr>
-                <a href="#about" class="btn btn-primary btn-xl page-scroll">Find Out More</a>
+          <button type="button" class="btn btn-primary btn-lg">Click on a word to show relevant reviews and top strains.</button><br /><br />
+          <div class="btn-toolbar pagination-centered" id="word-buttons" style="display:inline-block;">
+          </div>
+          <div class="form-group row">
+            <br />
+            <div class="col-lg-5"></div>
+            <div class="col-lg-2">
+              <input class="form-control" type="text" value="or enter any word" id="example-text-input">
             </div>
+            <div class="col-lg-5"></div>
+          </div>
+          <div class="row">
+            <div class="col-lg-4"></div>
+          <div class="col-lg-4"><button type="button" class="btn btn-primary" style="display:inline-block;">Get reviews and strains</button></div>
+          <div class="col-lg-4"></div>
+        </div>
         </div>
     </header>
 
@@ -97,7 +105,7 @@
                     and I used word2vec and neural networks to classify sentiment towards targeted words in reviews.</p>
 
                     <p>You can search for the cannabis strain people have talked about the most for any particular word.</p>
-                    <a href="/find_best.html" class="page-scroll btn btn-default btn-xl sr-button">Go on, try it out!</a>
+                    <a href="#services" class="page-scroll btn btn-default btn-xl sr-button">Go on, try it out!</a>
                 </div>
             </div>
         </div>
@@ -294,19 +302,8 @@
       $(window).load(function() {
         var words = ['Sleep', 'PTSD', 'Creativity', 'Inspiration', 'Anything'];
         for (var i = 0; i < words.length; i++) {
-            $("#js-rotating").append('<li>' + words[i] + '</li>');
+            $("#word-buttons").append('<button type="button" class="btn btn-primary">' + words[i] + '</button>');
         };
-        $("#js-rotating").Morphist({
-            // The entrance animation type (In).
-            animateIn: "fadeInLeft",
-            // The exit animation type (Out). Refer to Animate.css for a list of available animations.
-            animateOut: "fadeOutRight",
-            // The delay between the changing of each object in milliseconds.
-            speed: 3000,
-            complete: function () {
-                // Called after the entrance animation is executed.
-            }
-        });
       });
     </script>
 
