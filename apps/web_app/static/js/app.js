@@ -1,4 +1,4 @@
-var post_main_addr = 'http://0.0.0.0:10001' // 'http://cannadvise.me' //'http://35.161.235.42:10001'; // address with flask api
+var post_main_addr;
 
 function add_to_bag(word, i, rec) {
   var index = chosen_words.indexOf(word);
@@ -345,4 +345,9 @@ $(document).click(function (event) {
     if (_opened === true && !clickover.hasClass("navbar-toggle")) {
         $navbar.collapse('hide');
     }
+});
+
+// log user on page loads
+$(document).ready(function() {
+  post_main_addr = 'http://' + window.location.href.split('/')[2];
 });
