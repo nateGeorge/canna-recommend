@@ -323,6 +323,14 @@ $('#contact').click(function() {
     });
 });
 
+$('#ptsd_survey').click(function() {
+    chosen_words = [];
+    $('#page_beef').fadeOut(function() {
+      $('.main_page').load('ptsd_survey.html', complete = function() {
+      });
+    });
+});
+
 // for menu bar functionality
 $(document).on('click','.navbar-collapse.in',function(e) {
     if( $(e.target).is('a') && $(e.target).attr('class') != 'dropdown-toggle' ) {
