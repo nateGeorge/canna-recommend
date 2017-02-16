@@ -17,9 +17,9 @@ def index():
     user_id = request.cookies.get('cannadviseme')
     print 'cookie:', user_id
     if user_id is None:
-        return app.send_static_file('app.html')
+        return app.send_static_file('index.html')
 
-    resp = make_response(render_template('app.html'))
+    resp = make_response(render_template('index.html'))
     resp.set_cookie('cannadviseme', user_id)
 
 if __name__ == '__main__':
