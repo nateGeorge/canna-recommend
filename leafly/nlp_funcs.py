@@ -22,6 +22,7 @@ def load_group_dfs(prod_group_dfs_filename='prod_group_dfs.pk', user_group_dfs_f
     user_group_dfs = pk.load(open(user_group_dfs_filename))
     return prod_group_dfs, user_group_dfs
 
+
 def print_fine_pos(token):
     return (token.tag_)
 
@@ -207,6 +208,7 @@ def get_top_words_lemmatize(df, num_words='all', ngram_range=(1, 1), max_df=0.75
          u'wa': 20})
     '''
 
+
 def lemmatize_tfidf(df, ngram_range=(1, 1), max_df=0.75, stops='all', max_features=None):
     '''
     gets top words from tfidf vectorization of reviews in dataframe df
@@ -239,6 +241,7 @@ def lemmatize_tfidf(df, ngram_range=(1, 1), max_df=0.75, stops='all', max_featur
     sort_idxs = np.array(np.argsort(avg_vects))[::-1]
 
     return tfvect, vect_words, review_vects
+
 
 def get_top_bigrams(df, num_words='all'):
     '''
@@ -397,6 +400,7 @@ def get_user_word_choices():
 
     return word_dict
 
+
 def check_word_choices_in_topwords(word_dict, prod_top_words):
     '''
     checks to make sure each word in the word_dict is in prod_top_words
@@ -404,6 +408,7 @@ def check_word_choices_in_topwords(word_dict, prod_top_words):
     returns list of words not in the top_words, but in the word_dict
     '''
     pass
+
 
 def get_sents_with_sleep(df):
     '''
@@ -432,6 +437,7 @@ def get_sents_with_sleep(df):
         new_df.set_value(i, 'sent_count', scount)
 
     return new_df
+
 
 def get_sents_with_words(df, word):
     '''
