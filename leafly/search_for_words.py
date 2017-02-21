@@ -40,6 +40,7 @@ def load_data(full=False):
 
     return df, prod_review_df
 
+
 def get_top_strains(df, word='pain', plot=False, tfvect=None, review_vects=None, vect_words=None):
     '''
     takes a dataframe with products, reviews, and review counts,
@@ -158,8 +159,9 @@ def get_top_strains_word_sentiment(prod_review_df, word='ptsd', min_sents=1,
     if yes_pickle:
         pk.dump(senti_df, open(word + '_senti_df.pk', 'w'))
         pk.dump(sent_df, open(word + '_sent_df.pk', 'w'))
-    
+
     return pd.DataFrame(sentiment_dict), sentence_df
+
 
 def get_sentiment(sentence):
     '''
@@ -167,6 +169,7 @@ def get_sentiment(sentence):
     '''
     blob = TextBlob(sentence)
     return blob.sentiment[0]
+
 
 def score_sentiments(df):
     '''
@@ -188,10 +191,11 @@ def score_sentiments(df):
     return ratings
 
 
-
-
-
 if __name__ == "__main__":
+    # testing scoring eacd word sentiment separately
+    # for w in df.iloc[2]['review'].split():
+    #     print w, sfw.get_sentiment(w)
+    
     df, prod_review_df = load_data(full=True)
     # review_vects_full = pk.load(open('leafly/review_vects_full.pk'))
     # vect_words = pk.load(open('leafly/vect_words1.pk'))

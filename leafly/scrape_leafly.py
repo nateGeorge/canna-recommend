@@ -16,6 +16,7 @@ import db_functions as dbfunc
 import numpy as np
 import pandas as pd
 import leafly.data_preprocess as dp
+from lxml import html
 
 delay_penalty = 1  # time to wait until starting next thread if can't scrape current one
 try:
@@ -29,6 +30,7 @@ NEW_STRAIN_PAGE_FILE = 'leafly/leafly_newest_strains_page_' + \
     datetime.utcnow().isoformat()[:10] + '.pk'
 BASE_URL = 'https://www.leafly.com'
 STRAIN_URL = BASE_URL + '/explore/sort-alpha'
+NEW_STRAIN_URL = BASE_URL + '/explore/sort-newest'
 
 DB_NAME = 'leafly_backup_2016-11-01'  # 'leafly'
 
@@ -103,7 +105,7 @@ def load_current_strains(correct_names=False):
     return strains
 
 
-def load_strain_list(check=False):
+def load_strain_list(driver, check=False):
     '''
     * checks for latest strain list file and loads it if it's there
     * if there, checks to make sure strain list is up to date and updates
@@ -111,16 +113,13 @@ def load_strain_list(check=False):
     * otherwise scrolls through entire alphabetically-sorted strain list
     (takes a long time)
     '''
-    driver = setup_driver()
-    cooks = clear_prompts(driver)  # clears prompts and saves cookies
-
     newest = max(iglob('leafly/strain_pages_list*.pk'), key=os.path.getctime)
     if len(newest) > 0:
         # get list of strain pages
         strains = pk.load(open(newest))
         # check for newly-added strains
         if check:
-            uptodate, diff = check_if_strains_uptodate(strains, STRAIN_URL, cooks)
+            uptodate, diff = check_if_strains_uptodate(driver, strains, STRAIN_URL, cooks)
             if not uptodate:
                 strains = update_strainlist(diff, strains, newest)
     else:
@@ -144,7 +143,7 @@ def update_strainlist(diff, strains, strain_file):
     return strains
 
 
-def scrape_strainlist(save_file, strain_url=STRAIN_URL):
+def scrape_strainlist(driver, save_file, strain_url=STRAIN_URL):
     '''
     scrapes leafly's strainlist (alphabetically sorted) and saves all results in
     'savefile'
@@ -215,7 +214,72 @@ def scrape_strainlist(save_file, strain_url=STRAIN_URL):
     return soup
 
 
-def check_if_strains_uptodate(strains, strain_url, cooks):
+def get_many_new_strains(driver, num_new_strains, strain_url=NEW_STRAIN_URL):
+    """
+    """
+    driver.get(strain_url)
+    # keep clicking 'load more' until there is no more
+    pause = 1
+    tries = 0  # number of times tried to click button unsucessfully
+    lastHeight = driver.execute_script("return document.body.scrollHeight")
+    # for dealing with 21+ button and subscription button
+    age_screen = True
+    age_count = 0
+    signup = True
+    signup_count = 0
+    strains=[]
+    while len(strains) < num_new_strains:
+        if age_screen:
+            if age_count == 10:
+                age_screen = False
+            try:
+                driver.find_element_by_xpath(
+                    '//a[@ng-click="answer(true)"]').click()
+                print 'clicked 21+ button'
+                age_screen == False
+            except:
+                pass
+            age_count += 1
+
+        if signup:
+            if signup_count == 10:
+                signup = False
+            try:
+                driver.find_element_by_xpath(
+                    '//a[@ng-click="ecm.cancel()"]').click()
+                print 'clicked dont subscribe button'
+                signup == False
+            except:
+                pass
+            age_count += 1
+
+        print 'scrolling down...'
+        driver.execute_script(
+            "window.scrollTo(0, document.body.scrollHeight);")
+        try:
+            driver.find_element_by_xpath(
+                '//*[@id="main"]/div/section/div[2]/div/div/div[2]/div[3]/button').click()
+        except Exception as e:
+            print e
+            tries += 1
+            if tries == 3:
+                break
+            print 'end of strains'
+        time.sleep(pause)
+        newHeight = driver.execute_script("return document.body.scrollHeight")
+        if newHeight == lastHeight:
+            break
+        lastHeight = newHeight
+
+        res = driver.page_source
+        driver.save_screenshot(filename='test.png')
+        soup = bs(res, 'lxml')
+        strains = get_strains(soup, update_pk=False)
+
+    return strains
+
+
+def check_if_strains_uptodate(driver, strains, strain_url, cooks):
     '''
     scrapes leafly main page to check if any new strains have been added
 
@@ -232,12 +296,23 @@ def check_if_strains_uptodate(strains, strain_url, cooks):
 
     # get strain list sorted by newest added
     new_url = 'https://www.leafly.com/explore/sort-newest'
+
     res = requests.get(new_url, cookies=cooks)
     soup = bs(res.content, 'lxml')
     pk.dump(res.content, open(NEW_STRAIN_PAGE_FILE, 'w'), 2)
+    strain_cnt_xpath = '//*[@id="main"]/div/section/div[1]/div[2]/div/div[1]/strong'
+    tree = html.fromstring(res.content)
+    strain_cnt = int(tree.xpath(strain_cnt_xpath)[0].text)
     new_strains = soup.findAll(
         'a', {'class': 'ga_Explore_Strain_Tile'}) + soup.findAll('a', {'class': 'ng-scope'})
     new_strains = set([s.get('href').lower() for s in new_strains])
+    tot_new_strains = strain_cnt - strain_len
+    if len(new_strains) < tot_new_strains:
+        # if we still haven't grabbed all the strains, we need to
+        # scroll down to get all new strains
+        new_strains = get_many_new_strains(driver, tot_new_strains)
+        new_strains = set([s.lower() for s in new_strains])
+
     strain_set = set(strains)
     # check if more duplicates than just chocolate-kush (which has been
     # handled)
@@ -245,19 +320,26 @@ def check_if_strains_uptodate(strains, strain_url, cooks):
     if len(coll_names) - len(set(coll_names)) > 1:
         df = pd.DataFrame(coll_names)
         vc = df[0].value_counts()
-        print 'new duplicates:', vc[vc > 1]
+        dupes = vc[vc > 1]
+        print 'new duplicates:', dupes
+        print 'web addresses:'
+        for s in sorted(list(strain_set | set(new_strains))):
+            if any([d in s for d in dupes.index.values]):
+                print s
+
         raise Exception('we got a problem: more duplicate strains')
 
     diff = new_strains.difference(strain_set)
     print 'missing', len(diff), 'strains in current data'
     #res = requests.get(strain_url, cookies=cooks)
-    alpha_sort_soup = bs(res.content, 'lxml')
-    cur_strains = int(alpha_sort_soup.findAll(
-        'strong', {'ng-bind': 'totalResults'})[0].get_text())
-    print 'found', cur_strains, 'strains on leafly'
-    if cur_strains > strain_len or len(diff) > 0:
+    # had this before, but re-implemented above...
+    # alpha_sort_soup = bs(res.content, 'lxml')
+    # cur_strains = int(alpha_sort_soup.findAll(
+    #     'strong', {'ng-bind': 'totalResults'})[0].get_text())
+    print 'found', strain_cnt, 'strains on leafly'
+    if strain_cnt > strain_len or len(diff) > 0:
         print 'updating strainlist...'
-        return False, diff
+        return False, diff, new_strains, strain_set
 
     print 'strainlist up-to-date!'
     return True, diff
@@ -269,17 +351,16 @@ def get_strains(strain_soup, update_pk=False, strain_pages_file=None):
         strain_pages_file = 'strain_pages_list' + \
             datetime.now().isoformat()[:10] + '.pk'
 
-    strains = strain_soup.findAll(
-        'a', {'class': 'ga_Explore_Strain_Tile'}) + strain_soup.findAll('a', {'class': 'ng-scope'})
+    strains = strain_soup.findAll('a', {'class': 'ga_Explore_Strain_Tile'}) + \
+                                strain_soup.findAll('a', {'class': 'ng-scope'})
     strains = [s.get('href') for s in strains]
     if not os.path.exists(strain_pages_file) or update_pk:
         pk.dump(strains, open(strain_pages_file, 'w'), 2)
 
-    orig = strains.copy()
     strains = set(strains)
     strains = sorted(list(strains))
 
-    coll_names = [s.split('/')[-1] for s in orig]
+    coll_names = [s.split('/')[-1] for s in strains]
 
     if len(coll_names) - len(set(coll_names)) > 1:
         df = pd.DataFrame(coll_names)
@@ -374,6 +455,7 @@ def scrape_for_num(strain):
         coll.insert_one({'review_count': [num_reviews]})
     client.close()
 
+
 def update_reviews(strains):
     agent = ua.random  # select a random user agent
     headers = {
@@ -405,6 +487,7 @@ def update_reviews(strains):
             genetics = strain.split('/')[1]
             num_to_scrape = num_reviews - cur_reviews
             scrape_reviews_page_threads_update(strain, url, genetics, num_to_scrape)
+
 
 def scrape_reviews_page_threads_update(strain, url, genetics, num_to_scrape, verbose=True, num_threads=10):
     '''
@@ -500,6 +583,7 @@ def scrape_reviews_page_threads_update(strain, url, genetics, num_to_scrape, ver
                 th.join()
 
     client.close()
+
 
 def scrape_reviews_parallel(strains, pool_size=None):
     if pool_size is None:
@@ -783,6 +867,7 @@ def get_strains_left_to_scrape(strains):
     strains_left = strains[mask == 1]
     return strains_left
 
+
 def scrape_individ_pages(df):
     '''
     takes in review dataframe (i.e. from data_preprocess module)
@@ -881,6 +966,7 @@ def scrape_individ_pages(df):
 
     return None
 
+
 def scrape_individ_pages_thread(df):
     '''
     '''
@@ -976,6 +1062,7 @@ def scrape_one_individ(r):
 
     return datadict
 
+
 def scrape_individ_pages_mt(df):
     pool_size = mp.cpu_count()
 
@@ -983,6 +1070,7 @@ def scrape_individ_pages_mt(df):
     dfs = pool.map(func=scrape_one_individ, iterable=df.iterrows())
 
     return dfs
+
 
 def finish_scraping(strains):
     '''
@@ -1000,6 +1088,7 @@ def finish_scraping(strains):
     # need to update so it only scrapes until it reaches a review it already has
     scrape_reviews_parallel(strains_left)
 
+
 def get_already_scraped():
     '''
     retrieves list of individual reviews already scraped
@@ -1016,22 +1105,23 @@ def get_already_scraped():
 
     return links
 
+
 if __name__ == "__main__":
 
     driver = setup_driver()
     cooks = clear_prompts(driver)  # clears prompts and saves cookies
-
-    # another site to scrape:
-    # base_url = 'https://weedmaps.com/'
-    # url = base_url + 'dispensaries/in/united-states/colorado/denver-downtown'
-    strains = load_strain_list()
-    ns, df = dbfunc.check_scraped_reviews()
-    strain_names = set([s.split('/')[-1].lower() for s in strains])
-    scraped_strains = set([s.lower() for s in dbfunc.get_list_of_scraped()])
-    # strains on the site but not in the db
-    new_to_scrape = strain_names.difference(scraped_strains)
-    nts = [s for s in strains if s.split(
-        '/')[-1].lower() in new_to_scrape]
+    #
+    # # another site to scrape:
+    # # base_url = 'https://weedmaps.com/'
+    # # url = base_url + 'dispensaries/in/united-states/colorado/denver-downtown'
+    strains = load_strain_list(driver=driver, check=True)
+    # ns, df = dbfunc.check_scraped_reviews()
+    # strain_names = set([s.split('/')[-1].lower() for s in strains])
+    # scraped_strains = set([s.lower() for s in dbfunc.get_list_of_scraped()])
+    # # strains on the site but not in the db
+    # new_to_scrape = strain_names.difference(scraped_strains)
+    # nts = [s for s in strains if s.split(
+    #     '/')[-1].lower() in new_to_scrape]
 
     scrape_new = False
     if scrape_new:
@@ -1048,7 +1138,7 @@ if __name__ == "__main__":
     #update_reviews(strains_left)
 
     # scrape each individ review page for effects, full review, consumption method, etc
-    scrape_long = True
+    scrape_long = False
     if scrape_long:
         already_scraped = set(get_already_scraped())
         review_df = dp.load_data(fix_names=False, clean_reviews=False, no_anon=False, get_links=True)
