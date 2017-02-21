@@ -31,6 +31,10 @@ NEW_STRAIN_PAGE_FILE = 'leafly/leafly_newest_strains_page_' + \
 BASE_URL = 'https://www.leafly.com'
 STRAIN_URL = BASE_URL + '/explore/sort-alpha'
 NEW_STRAIN_URL = BASE_URL + '/explore/sort-newest'
+# list of strains that are listed more than once in different categories.
+# for now, manually updating this based on error that
+# comes out of check_if_strains_uptodate
+DBL_CONV_DICT = {'/indica/chocolate-kush':'chocolate-kush-indica', '/sativa/princesss-tiara':'princesss-tiara-sativa'}
 
 DB_NAME = 'leafly_backup_2016-11-01'  # 'leafly'
 
@@ -272,7 +276,6 @@ def get_many_new_strains(driver, num_new_strains, strain_url=NEW_STRAIN_URL):
         lastHeight = newHeight
 
         res = driver.page_source
-        driver.save_screenshot(filename='test.png')
         soup = bs(res, 'lxml')
         strains = get_strains(soup, update_pk=False)
 
@@ -317,7 +320,8 @@ def check_if_strains_uptodate(driver, strains, strain_url, cooks):
     # check if more duplicates than just chocolate-kush (which has been
     # handled)
     coll_names = [s.split('/')[-1] for s in strain_set | new_strains]
-    if len(coll_names) - len(set(coll_names)) > 1:
+    # have 2 strains that are doubled right now
+    if len(coll_names) - len(set(coll_names)) > 2:
         df = pd.DataFrame(coll_names)
         vc = df[0].value_counts()
         dupes = vc[vc > 1]
@@ -339,7 +343,7 @@ def check_if_strains_uptodate(driver, strains, strain_url, cooks):
     print 'found', strain_cnt, 'strains on leafly'
     if strain_cnt > strain_len or len(diff) > 0:
         print 'updating strainlist...'
-        return False, diff, new_strains, strain_set
+        return False, diff
 
     print 'strainlist up-to-date!'
     return True, diff
@@ -362,7 +366,7 @@ def get_strains(strain_soup, update_pk=False, strain_pages_file=None):
 
     coll_names = [s.split('/')[-1] for s in strains]
 
-    if len(coll_names) - len(set(coll_names)) > 1:
+    if len(coll_names) - len(set(coll_names)) > 2:
         df = pd.DataFrame(coll_names)
         vc = df[0].value_counts()
         print 'new duplicates:', vc[vc > 1]
@@ -422,10 +426,7 @@ def scrape_for_num(strain):
 
     client = MongoClient()
     db = client[DB_NAME]
-    if strain == '/Indica/chocolate-kush':
-        coll = db['chocolate-kush-indica']
-    else:
-        coll = db[strain.split('/')[-1]]
+    coll = get_coll(strain, db)
 
     genetics = strain.split('/')[1]
 
@@ -468,10 +469,7 @@ def update_reviews(strains):
 
     for strain in strains:
         url = BASE_URL + s + '/reviews'
-        if strain == '/Indica/chocolate-kush':
-            coll = db['chocolate-kush-indica']
-        else:
-            coll = db[strain.split('/')[-1]]
+        coll = get_coll(strain, db)
 
         reviews_block = []
         while len(reviews_block) == 0:
@@ -487,6 +485,18 @@ def update_reviews(strains):
             genetics = strain.split('/')[1]
             num_to_scrape = num_reviews - cur_reviews
             scrape_reviews_page_threads_update(strain, url, genetics, num_to_scrape)
+
+
+def get_coll(strain, db):
+    """
+    deals with some of the doubly-listed strains and assigns them the right collection
+    """
+    if strain.lower() in DBL_CONV_DICT:
+        coll = db[DBL_CONV_DICT[strain.lower()]]
+    else:
+        coll = db[strain.split('/')[-1]]
+
+    return coll
 
 
 def scrape_reviews_page_threads_update(strain, url, genetics, num_to_scrape, verbose=True, num_threads=10):
@@ -508,12 +518,7 @@ def scrape_reviews_page_threads_update(strain, url, genetics, num_to_scrape, ver
     # need to connect to client in each process and thread
     client = MongoClient()
     db = client[DB_NAME]
-
-    if strain == '/Indica/chocolate-kush':
-        coll = db['chocolate-kush-indica']
-    else:
-        coll = db[strain.split('/')[-1]]
-
+    coll = get_coll(strain)
     pages = num_to_scrape / 8
     scrapetime = datetime.utcnow().isoformat()
     threads = []
@@ -628,10 +633,7 @@ def scrape_reviews_page_threads(strain, url, genetics, verbose=True, num_threads
     client = MongoClient()
     db = client[DB_NAME]
 
-    if strain == '/Indica/chocolate-kush':
-        coll = db['chocolate-kush-indica']
-    else:
-        coll = db[strain.split('/')[-1]]
+    coll = get_coll(strain, db)
 
     reviews_block = []
     while len(reviews_block) == 0:
@@ -726,10 +728,7 @@ def scrape_a_review_page(url, verbose=True):
     client = MongoClient()
     db = client[DB_NAME]
     strain = url.split('/')[4]
-    if strain == '/Indica/chocolate-kush':
-        coll = db['chocolate-kush-indica']
-    else:
-        coll = db[strain.split('/')[-1]]
+    coll = get_coll(strain, db)
 
     # for keeping track of how many pages didn't load properly
     coll2 = db['scraped_review_pages']
@@ -1110,18 +1109,18 @@ if __name__ == "__main__":
 
     driver = setup_driver()
     cooks = clear_prompts(driver)  # clears prompts and saves cookies
-    #
-    # # another site to scrape:
-    # # base_url = 'https://weedmaps.com/'
-    # # url = base_url + 'dispensaries/in/united-states/colorado/denver-downtown'
+
+    # another site to scrape:
+    # base_url = 'https://weedmaps.com/'
+    # url = base_url + 'dispensaries/in/united-states/colorado/denver-downtown'
     strains = load_strain_list(driver=driver, check=True)
-    # ns, df = dbfunc.check_scraped_reviews()
-    # strain_names = set([s.split('/')[-1].lower() for s in strains])
-    # scraped_strains = set([s.lower() for s in dbfunc.get_list_of_scraped()])
-    # # strains on the site but not in the db
-    # new_to_scrape = strain_names.difference(scraped_strains)
-    # nts = [s for s in strains if s.split(
-    #     '/')[-1].lower() in new_to_scrape]
+    ns, df = dbfunc.check_scraped_reviews()
+    strain_names = set([s.split('/')[-1].lower() for s in strains])
+    scraped_strains = set([s.lower() for s in dbfunc.get_list_of_scraped()])
+    # strains on the site but not in the db
+    new_to_scrape = strain_names.difference(scraped_strains)
+    nts = [s for s in strains if s.split(
+        '/')[-1].lower() in new_to_scrape]
 
     scrape_new = False
     if scrape_new:
