@@ -468,7 +468,7 @@ def update_reviews(strains):
     db = client[DB_NAME]
 
     for strain in strains:
-        url = BASE_URL + s + '/reviews'
+        url = BASE_URL + strain + '/reviews'
         coll = get_coll(strain, db)
 
         reviews_block = []
@@ -476,15 +476,16 @@ def update_reviews(strains):
             res = requests.get(url, cookies=cooks)
             soup = bs(res.content, 'lxml')
             reviews_block = soup.findAll('span', {'class': 'hidden-xs'})
-            time.sleep(2)
+            if len(reviews_block) == 0:
+                time.sleep(2)
 
         num_reviews = int(reviews_block[0].get_text().strip('(').strip(')') )
         print num_reviews, 'total reviews on site'
         cur_reviews = coll.find({'review_count':{'$exists':True}}).next()['review_count'][-1]
-        if cur_reviews < num_reviews:
+        if cur_reviews < num_reviews | cur_reviews == 39:
             genetics = strain.split('/')[1]
             num_to_scrape = num_reviews - cur_reviews
-            scrape_reviews_page_threads_update(strain, url, genetics, num_to_scrape)
+            scrape_reviews_page_threads_update(strain, url, genetics, num_to_scrape, num_reviews)
 
 
 def get_coll(strain, db):
@@ -499,7 +500,7 @@ def get_coll(strain, db):
     return coll
 
 
-def scrape_reviews_page_threads_update(strain, url, genetics, num_to_scrape, verbose=True, num_threads=10):
+def scrape_reviews_page_threads_update(strain, url, genetics, num_to_scrape, num_reviews, verbose=True, num_threads=10):
     '''
     scrapes reviews page for all reviews
     url is a string for the specified strain homepage
@@ -518,7 +519,7 @@ def scrape_reviews_page_threads_update(strain, url, genetics, num_to_scrape, ver
     # need to connect to client in each process and thread
     client = MongoClient()
     db = client[DB_NAME]
-    coll = get_coll(strain)
+    coll = get_coll(strain, db)
     pages = num_to_scrape / 8
     scrapetime = datetime.utcnow().isoformat()
     threads = []
@@ -1122,9 +1123,15 @@ if __name__ == "__main__":
     nts = [s for s in strains if s.split(
         '/')[-1].lower() in new_to_scrape]
 
-    scrape_new = False
+    scrape_new = True
     if scrape_new:
         scrape_reviews_parallel(nts)
+
+    strains = load_strain_list(driver=driver, check=True)
+    update_reviews(strains)
+
+    # this section was for when I had scraped almost everything, but had to finish_scraping
+    # up a few strains.  Largely useless now
     # strains_left = get_strains_left_to_scrape(strains)
     # chunk_size = 10 # scrape 10 strains at a time so as not to overload anything
     # while len(strains_left) > 0:
@@ -1132,7 +1139,7 @@ if __name__ == "__main__":
     #     strains_left = get_strains_left_to_scrape(strains)
     #     scrape_reviews_parallel(strains_left)
     #     time.sleep(4)
-    #finish_scraping(strains)
+    # finish_scraping(strains)
 
     #update_reviews(strains_left)
 

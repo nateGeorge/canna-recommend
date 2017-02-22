@@ -175,33 +175,73 @@ def score_sentiments(df):
     '''
     takes a dataframe with product, review text in it
     displays one review text at a time, user rates sentiment -1, 0, or 1
+    Uses global variable 'ratings' in case the loop breaks, so that you don't
+    ratings.
     '''
-    print '''press 1 to rate sentence as positive sentiment,
-            0 as negative,
-            and . as neutral.
-            Press enter to finish that entry.
+    print '''press 8 to rate sentence as positive sentiment (up arrow on d-pad),
+            2 as negative,
+            and 5 as neutral.
             '''
-    ratings = []
-    for i, c in df.iterrows():
-        print ''
-        print c['first_sentence']
-        rating = raw_input()
-        ratings.append(rating)
 
-    return ratings
+    start = False
+    for i, c in df.iterrows():
+        if start or 'been using for my PTSD and keeps my mind occupied on things that matter. today' in c['word_sentence']:
+            start = True
+        else:
+            continue
+        print ''
+        for s in c['word_sentence']:
+            print s
+            rating = raw_input()
+            ratings.append(rating)
+            sents.append(s)
+            ilocs.append(i)
+
+
+def convert_raw_rating(x):
+    """
+    8 is positive, 5 is neutral, and 2 is negative.
+    Converts to a -1, 0, 1 scale.
+    """
+    if x == '8':
+        return 1
+    elif x == '5':
+        return 0
+    elif x == '2':
+        return -1
 
 
 if __name__ == "__main__":
     # testing scoring eacd word sentiment separately
     # for w in df.iloc[2]['review'].split():
     #     print w, sfw.get_sentiment(w)
-    
+
     df, prod_review_df = load_data(full=True)
     # review_vects_full = pk.load(open('leafly/review_vects_full.pk'))
     # vect_words = pk.load(open('leafly/vect_words1.pk'))
 
     # gets top words with default args, 'ptsd' and pickles it
     senti_df, sent_df = get_top_strains_word_sentiment(prod_review_df)#, early_stop=True)
+    sent_df.reset_index(inplace=True, drop=True)
+    senti_df.reset_index(inplace=True, drop=True)
+
+    ratings = []
+    sents = []
+    ilocs = []
+    score_sentiments(sent_df)
+    # temp hack to fix indexes because I forgot to reset indexes before I ran
+    # the first time
+    # ixs = []
+    # for i, (j, r) in enumerate(sent_df.iterrows()):
+    #     ixs.extend([i] * len(r['word_sentence']))
+
+    strains = [sent_df.iloc[i]['product'] for i in ixs]
+    rating_df = pd.DataFrame({'raw_rating':ratings, 'sentence':sents, 'iloc':ilocs, 'product':strains})
+    rating_df['rating'] = rating_df['raw_rating'].apply(lambda x: convert_raw_rating(x))
+    rating_df.to_csv('leafly/ratings/ptsd/ptsd.csv', encoding='utf-8')
+    # check out the best/worst strains
+    avg_ratings = rating_df.groupby('product').mean()
+    rating_counts = rating_df.groupby('product').count()
 
     # makes full tfidf vectors
     makeFull = False
