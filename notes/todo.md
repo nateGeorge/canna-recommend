@@ -12,6 +12,13 @@ prototype pyfm -- nope
 
 cluster stuff by tfidf - 2 clusters gives best silhouette_score
 
+## Machine Learning
+similar strains -- cluster by reviews, effects, and chemistry
+neural net for predicting concentration
+logistic regression chemistry -> effects; also effects -> chemistry
+something for review -> effects
+
+
 # Website work:
 bag-of-words on site that holds your words you've chosen -- need to scale words for mobile
 --looks cheesy (use framework)

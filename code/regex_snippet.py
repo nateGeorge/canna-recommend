@@ -1,4 +1,6 @@
-
+"""
+regex snippet from analyzing analytical360 data
+"""
     for c in cannabinoids:
         for r in c:
             res = re.search('(([\d\.]+).*(thc.*)', r, re.IGNORECASE)

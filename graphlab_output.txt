@@ -1,1 +1,0 @@
-This non-commercial license of GraphLab Create for academic use is assigned to nathancgeorge@gmail.com and will expire on October 07, 2017.

@@ -1,3 +1,9 @@
+"""
+cleans up python, javascript, html, and css files
+
+uses autopep8 for python; js-beautify for js, html, and css files
+"""
+
 import subprocess
 import fnmatch
 import os
