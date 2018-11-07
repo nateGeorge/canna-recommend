@@ -72,7 +72,7 @@ def load_all_full_reviews():
         if r['effects'] != '':
             temp_ef = set([s.strip() for s in r['effects'].split('-')])
             if '' in temp_ef:
-                print r
+                print(r)
                 break
             for e in temp_ef:
                 effect_dict.setdefault(e, []).append(1)
@@ -81,8 +81,8 @@ def load_all_full_reviews():
 
     effect_dict['link'] = full_df['link'].values
     # check to make sure lengths are the same
-    for k in effect_dict.keys():
-        print k, len(effect_dict[k])
+    for k in list(effect_dict.keys()):
+        print(k, len(effect_dict[k]))
 
     # one-hot encode flavors
     unique_flavors = set(np.unique(flavors_list))
@@ -93,7 +93,7 @@ def load_all_full_reviews():
         if r['flavors'] != '':
             temp_fl = set([s.strip() for s in r['flavors'].split('-')])
             if '' in temp_fl:
-                print r
+                print(r)
                 break
             for e in temp_fl:
                 flavor_dict.setdefault(e, []).append(1)
@@ -116,7 +116,7 @@ def load_all_full_reviews():
             prod_ohe = prod_ohe.set_value(i, c, r[c] / float(sumcount))
 
         sumcount = np.sum([r[c] for c in unique_effects])
-        print sumcount
+        print(sumcount)
 
     for i, r in prod_ohe.iterrows():
         sumcount = np.sum([r[c] for c in unique_flavors])
@@ -126,7 +126,7 @@ def load_all_full_reviews():
             prod_ohe = prod_ohe.set_value(i, c, r[c] / float(sumcount))
 
         sumcount = np.sum([r[c] for c in unique_flavors])
-        print sumcount
+        print(sumcount)
 
     return ohe_df, prod_ohe
 
@@ -150,12 +150,12 @@ def cluster_by_effects_flavors():
         sil_scores.append(silhouette_score(cluster_data, labels, metric='euclidean'))
 
     endTime = time.time()
-    print 'took', endTime - start, 'seconds'
+    print('took', endTime - start, 'seconds')
 
-    plt.scatter(range(2, num_kmeans), sil_scores)
+    plt.scatter(list(range(2, num_kmeans)), sil_scores)
     plt.show()
 
-    plt.scatter(range(2, num_kmeans), scores)
+    plt.scatter(list(range(2, num_kmeans)), scores)
     plt.show()
 
     pca= PCA(n_components=10)
@@ -164,7 +164,7 @@ def cluster_by_effects_flavors():
     cur_km = kmeanses[1]
     traces = []
     for i in range(3):
-        print 'group', i, effects_pca[cur_km.labels_ == i, 0].shape
+        print('group', i, effects_pca[cur_km.labels_ == i, 0].shape)
         x, y, z = effects_pca[cur_km.labels_ == i, 0], effects_pca[cur_km.labels_ == i, 1], effects_pca[cur_km.labels_ == i, 3]
         traces.append(go.Scatter3d(
             x=x,
@@ -204,12 +204,12 @@ def cluster_by_effects_flavors():
             sorted_effects.append((e, group[e].mean()))
 
         sorted_effects = sorted(sorted_effects, key=lambda x: x[1], reverse=True)
-        print 'group', i
-        print sorted_effects
+        print('group', i)
+        print(sorted_effects)
         for e in sorted_effects:
-            print e[0]
-        print ''
-        print ''
+            print(e[0])
+        print('')
+        print('')
 
     '''
     group 0:
@@ -244,7 +244,7 @@ def cluster_by_effects_flavors():
     group1 = prod_ohe[cur_km.labels_ == 1]
     # holy shit stay away from bhang!
     for i in group1.index:
-        print i
+        print(i)
 
     bad = group1.index.values
 
@@ -322,12 +322,12 @@ def cluster_by_effects_flavors():
         sil_scores.append(silhouette_score(cluster_data, labels, metric='euclidean'))
 
     endTime = time.time()
-    print 'took', endTime - start, 'seconds'
+    print('took', endTime - start, 'seconds')
 
-    plt.scatter(range(2, num_kmeans), sil_scores)
+    plt.scatter(list(range(2, num_kmeans)), sil_scores)
     plt.show()
 
-    plt.scatter(range(2, num_kmeans), scores)
+    plt.scatter(list(range(2, num_kmeans)), scores)
     plt.show()
 
     pca= PCA(n_components=10)
@@ -336,7 +336,7 @@ def cluster_by_effects_flavors():
     cur_km = kmeanses[1]
     traces = []
     for i in range(3):
-        print 'group', i, flavors_pca[cur_km.labels_ == i, 0].shape
+        print('group', i, flavors_pca[cur_km.labels_ == i, 0].shape)
         x, y, z = flavors_pca[cur_km.labels_ == i, 0], flavors_pca[cur_km.labels_ == i, 1], flavors_pca[cur_km.labels_ == i, 3]
         traces.append(go.Scatter3d(
             x=x,
@@ -376,12 +376,12 @@ def cluster_by_effects_flavors():
             sorted_flavors.append((e, group[e].mean()))
 
         sorted_flavors = sorted(sorted_flavors, key=lambda x: x[1], reverse=True)
-        print 'group', i
-        print sorted_flavors
+        print('group', i)
+        print(sorted_flavors)
         for e in sorted_flavors:
-            print e[0]
-        print ''
-        print ''
+            print(e[0])
+        print('')
+        print('')
 
 
     '''
@@ -439,7 +439,7 @@ def cluster_by_effects_flavors():
     group1 = prod_ohe[cur_km.labels_ == 1]
     # holy shit stay away from bhang!
     for i in group1.index:
-        print i
+        print(i)
 
     bad = group1.index.values
 
@@ -510,7 +510,7 @@ if __name__ == "__main__":
     top_df = top_df[top_df['user'] != 'Anonymous']
 
     # dropped a few
-    top_df.drop_duplicates(subset=[u'product', u'rating', u'full_review', u'user'])
+    top_df.drop_duplicates(subset=['product', 'rating', 'full_review', 'user'])
 
 
     # cluster by tf-idf of full reviews
@@ -540,7 +540,7 @@ if __name__ == "__main__":
         sil_scores.append(silhouette_score(review_vects, labels, metric='euclidean'))
 
     endTime = time.time()
-    print 'took', endTime - start, 'seconds'
+    print('took', endTime - start, 'seconds')
 
     # look at silhouette_score
     sil_scores = []
@@ -549,7 +549,7 @@ if __name__ == "__main__":
         sil_scores.append(silhouette_score(review_vects, labels, metric='euclidean'))
 
     # shit...looks like 2 clusters is best, with 200 or full tfidf
-    plt.scatter(range(2, num_kmeans), sil_scores)
+    plt.scatter(list(range(2, num_kmeans)), sil_scores)
     plt.show()
 
     cur_km = kmeanses[1]
@@ -594,7 +594,7 @@ if __name__ == "__main__":
         words = review_vects[cur_km.labels_ == i, :]
         avg_vects = words.mean(axis=0)
         idx = np.argsort(avg_vects)[::-1]
-        print 'group', i
-        print zip(avg_vects[idx][:10], vect_words[idx][:10])
-        print ''
-        print ''
+        print('group', i)
+        print(list(zip(avg_vects[idx][:10], vect_words[idx][:10])))
+        print('')
+        print('')

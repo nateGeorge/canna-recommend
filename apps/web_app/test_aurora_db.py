@@ -23,4 +23,4 @@ cursor.execute('SHOW TABLES;')
 
 res = cursor.fetchall()
 
-print res[0][0]
+print(res[0][0])

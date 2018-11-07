@@ -4,7 +4,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 import leafly.nlp_funcs as nl
 import leafly.scrape_leafly as sl
 import json
-import cPickle as pk
+import pickle as pk
 import re
 from flask import Flask, request, make_response
 import flask
@@ -15,7 +15,7 @@ app.debug = True
 @app.route('/')
 def index():
     user_id = request.cookies.get('cannadviseme')
-    print 'cookie:', user_id
+    print('cookie:', user_id)
     if user_id is None:
         return app.send_static_file('index.html')
 

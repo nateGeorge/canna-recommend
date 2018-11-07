@@ -1,22 +1,24 @@
+import os
+import time
 import requests
+import threading
+import itertools
+import pickle as pk
+import multiprocessing as mp
+from glob import iglob
+from datetime import datetime
+
+import numpy as np
+import pandas as pd
+import data_preprocess as dp
+from lxml import html
 from bs4 import BeautifulSoup as bs
 from selenium import webdriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
-import time
-import cPickle as pk
-from datetime import datetime
-import threading
-import os
-from glob import iglob
-import multiprocessing as mp
-import itertools
 from pymongo import MongoClient
 from fake_useragent import UserAgent
+
 import db_functions as dbfunc
-import numpy as np
-import pandas as pd
-import leafly.data_preprocess as dp
-from lxml import html
 
 delay_penalty = 1  # time to wait until starting next thread if can't scrape current one
 try:
@@ -39,14 +41,39 @@ DBL_CONV_DICT = {'/indica/chocolate-kush':'chocolate-kush-indica', '/sativa/prin
 DB_NAME = 'leafly_backup_2016-11-01'  # 'leafly'
 
 
+
 def setup_driver():
-    dcap = dict(DesiredCapabilities.PHANTOMJS)
-    dcap["phantomjs.page.settings.userAgent"] = (
-        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/53 "
-        "(KHTML, like Gecko) Chrome/15.0.87"
-    )
-    driver = webdriver.PhantomJS(desired_capabilities=dcap)
-    driver.set_window_size(1920, 1080)
+    """
+    need to first download and setup geckodriver; instructions here:
+    https://stackoverflow.com/a/40208762/4549682
+    use geckodriver 0.20.1 until brokenpipeerror bug is fixed: https://github.com/mozilla/geckodriver/issues/1321
+    """
+    # couldn't get download working without manual settings...
+    # https://stackoverflow.com/questions/38307446/selenium-browser-helperapps-neverask-openfile-and-savetodisk-is-not-working
+    # create the profile (on ubuntu, firefox -P from command line),
+    prof_paths = ['/home/nate/.mozilla/firefox/jy4qtucw.leafly',
+                # work computer path
+                '/home/nate/.mozilla/firefox/TODO']
+    found_prof = False
+    for p in prof_paths:
+        try:
+            prof_path = p
+            profile = webdriver.FirefoxProfile(prof_path)
+            found_prof = True
+            print('found profile at', p)
+        except FileNotFoundError:
+            pass
+
+    if found_prof == False:
+        print('ERROR: no profile could be found, exiting')
+        exit()
+
+    driver = webdriver.Firefox(profile, executable_path='/home/nate/geckodriver')
+
+    # prevent broken pipe errors
+    # https://stackoverflow.com/a/13974451/4549682
+    print('done')
+    driver.implicitly_wait(5)
     return driver
 
 
@@ -66,7 +93,7 @@ def clear_prompts(driver):
             try:
                 driver.find_element_by_xpath(
                     '//a[@ng-click="answer(true)"]').click()
-                print 'clicked 21+ button'
+                print('clicked 21+ button')
                 age_screen == False
             except:
                 pass
@@ -75,7 +102,7 @@ def clear_prompts(driver):
             try:
                 driver.find_element_by_xpath(
                     '//a[@ng-click="ecm.cancel()"]').click()
-                print 'clicked dont subscribe button'
+                print('clicked dont subscribe button')
                 signup == False
             except:
                 pass
@@ -174,7 +201,7 @@ def scrape_strainlist(driver, save_file, strain_url=STRAIN_URL):
             try:
                 driver.find_element_by_xpath(
                     '//a[@ng-click="answer(true)"]').click()
-                print 'clicked 21+ button'
+                print('clicked 21+ button')
                 age_screen == False
             except:
                 pass
@@ -186,24 +213,24 @@ def scrape_strainlist(driver, save_file, strain_url=STRAIN_URL):
             try:
                 driver.find_element_by_xpath(
                     '//a[@ng-click="ecm.cancel()"]').click()
-                print 'clicked dont subscribe button'
+                print('clicked dont subscribe button')
                 signup == False
             except:
                 pass
             age_count += 1
 
-        print 'scrolling down...'
+        print('scrolling down...')
         driver.execute_script(
             "window.scrollTo(0, document.body.scrollHeight);")
         try:
             driver.find_element_by_xpath(
                 '//*[@id="main"]/div/section/div[2]/div/div/div[2]/div[3]/button').click()
         except Exception as e:
-            print e
+            print(e)
             tries += 1
             if tries == 3:
                 break
-            print 'end of strains'
+            print('end of strains')
         time.sleep(pause)
         newHeight = driver.execute_script("return document.body.scrollHeight")
         if newHeight == lastHeight:
@@ -213,8 +240,8 @@ def scrape_strainlist(driver, save_file, strain_url=STRAIN_URL):
     res = driver.page_source
     soup = bs(res, 'lxml')
     pk.dump(res, open(save_file, 'w'), 2)
-    print len(soup.findAll('a', {'class': 'ga_Explore_Strain_Tile'}))
-    print len(soup.findAll('a', {'class': 'ng-scope'}))
+    print(len(soup.findAll('a', {'class': 'ga_Explore_Strain_Tile'})))
+    print(len(soup.findAll('a', {'class': 'ng-scope'})))
     return soup
 
 
@@ -239,7 +266,7 @@ def get_many_new_strains(driver, num_new_strains, strain_url=NEW_STRAIN_URL):
             try:
                 driver.find_element_by_xpath(
                     '//a[@ng-click="answer(true)"]').click()
-                print 'clicked 21+ button'
+                print('clicked 21+ button')
                 age_screen == False
             except:
                 pass
@@ -251,24 +278,24 @@ def get_many_new_strains(driver, num_new_strains, strain_url=NEW_STRAIN_URL):
             try:
                 driver.find_element_by_xpath(
                     '//a[@ng-click="ecm.cancel()"]').click()
-                print 'clicked dont subscribe button'
+                print('clicked dont subscribe button')
                 signup == False
             except:
                 pass
             age_count += 1
 
-        print 'scrolling down...'
+        print('scrolling down...')
         driver.execute_script(
             "window.scrollTo(0, document.body.scrollHeight);")
         try:
             driver.find_element_by_xpath(
                 '//*[@id="main"]/div/section/div[2]/div/div/div[2]/div[3]/button').click()
         except Exception as e:
-            print e
+            print(e)
             tries += 1
             if tries == 3:
                 break
-            print 'end of strains'
+            print('end of strains')
         time.sleep(pause)
         newHeight = driver.execute_script("return document.body.scrollHeight")
         if newHeight == lastHeight:
@@ -295,7 +322,7 @@ def check_if_strains_uptodate(driver, strains, strain_url, cooks):
     strain_len = len(strains) + 2  # seems to be off by 2 for some reason
     # leafly has problems counting apparantly, noticed it in the reviews
     # counts too
-    print 'currently have', strain_len, 'strains'
+    print('currently have', strain_len, 'strains')
 
     # get strain list sorted by newest added
     new_url = 'https://www.leafly.com/explore/sort-newest'
@@ -325,27 +352,27 @@ def check_if_strains_uptodate(driver, strains, strain_url, cooks):
         df = pd.DataFrame(coll_names)
         vc = df[0].value_counts()
         dupes = vc[vc > 1]
-        print 'new duplicates:', dupes
-        print 'web addresses:'
+        print('new duplicates:', dupes)
+        print('web addresses:')
         for s in sorted(list(strain_set | set(new_strains))):
             if any([d in s for d in dupes.index.values]):
-                print s
+                print(s)
 
         raise Exception('we got a problem: more duplicate strains')
 
     diff = new_strains.difference(strain_set)
-    print 'missing', len(diff), 'strains in current data'
+    print('missing', len(diff), 'strains in current data')
     #res = requests.get(strain_url, cookies=cooks)
     # had this before, but re-implemented above...
     # alpha_sort_soup = bs(res.content, 'lxml')
     # cur_strains = int(alpha_sort_soup.findAll(
     #     'strong', {'ng-bind': 'totalResults'})[0].get_text())
-    print 'found', strain_cnt, 'strains on leafly'
+    print('found', strain_cnt, 'strains on leafly')
     if strain_cnt > strain_len or len(diff) > 0:
-        print 'updating strainlist...'
+        print('updating strainlist...')
         return False, diff
 
-    print 'strainlist up-to-date!'
+    print('strainlist up-to-date!')
     return True, diff
 
 
@@ -369,7 +396,7 @@ def get_strains(strain_soup, update_pk=False, strain_pages_file=None):
     if len(coll_names) - len(set(coll_names)) > 2:
         df = pd.DataFrame(coll_names)
         vc = df[0].value_counts()
-        print 'new duplicates:', vc[vc > 1]
+        print('new duplicates:', vc[vc > 1])
         raise Exception('we got a problem: more duplicate strains')
 
     return strains
@@ -407,7 +434,7 @@ def scrape_for_num_onedb(strain):
     soup = bs(res.content, 'lxml')
     num_reviews = int(soup.findAll(
         'span', {'class': 'hidden-xs'})[0].get_text().strip('(').strip(')'))
-    print num_reviews, 'total reviews for', strain
+    print(num_reviews, 'total reviews for', strain)
     scrapetime = datetime.utcnow().isoformat()
     coll.insert_one(
         {'strain': strain, 'review_counts': num_reviews, 'datetime': scrapetime})
@@ -447,7 +474,7 @@ def scrape_for_num(strain):
         num_reviews = int(rev_cnt[0].get_text().strip('(').strip(')'))
         time.sleep(2)
 
-    print num_reviews, 'total reviews for', strain
+    print(num_reviews, 'total reviews for', strain)
     scrapetime = datetime.utcnow().isoformat()
     if coll.find({'review_count': {'$exists': True}}).count() > 0:
         coll.update_one({'review_count': {'$exists': True}}, {
@@ -480,7 +507,7 @@ def update_reviews(strains):
                 time.sleep(2)
 
         num_reviews = int(reviews_block[0].get_text().strip('(').strip(')') )
-        print num_reviews, 'total reviews on site'
+        print(num_reviews, 'total reviews on site')
         cur_reviews = coll.find({'review_count':{'$exists':True}}).next()['review_count'][-1]
         if cur_reviews < num_reviews | cur_reviews == 39:
             genetics = strain.split('/')[1]
@@ -538,14 +565,14 @@ def scrape_reviews_page_threads_update(strain, url, genetics, num_to_scrape, num
         rev_cnt = coll.find({'review_count': {'$exists': True}})[0][
             'review_count'][-1] + 1  # correct for leafly miscounting
         if rev_cnt == num_reviews:
-            print 'already up-to-date'
+            print('already up-to-date')
             return
 
     if pages < 10:
         for i in range(pages + 1):
             cur_url = url + '?page=' + str(i)
             if verbose:
-                print 'scraping', cur_url
+                print('scraping', cur_url)
             # scrape_a_review_page(cur_url)
             t = threading.Thread(target=scrape_a_review_page, args=(cur_url,))
             t.start()
@@ -558,11 +585,11 @@ def scrape_reviews_page_threads_update(strain, url, genetics, num_to_scrape, num
         else:
             delay = 5
         for j in range(pages / 10):
-            print 'scraping pages', j * 10, 'to', (j + 1) * 10
+            print('scraping pages', j * 10, 'to', (j + 1) * 10)
             for i in range(j * 10, (j + 1) * 10):
                 cur_url = url + '?page=' + str(i)
                 if verbose:
-                    print 'scraping', cur_url
+                    print('scraping', cur_url)
                 # scrape_a_review_page(cur_url)
                 t = threading.Thread(
                     target=scrape_a_review_page, args=(cur_url,))
@@ -575,11 +602,11 @@ def scrape_reviews_page_threads_update(strain, url, genetics, num_to_scrape, num
             time.sleep(delay)
 
         if (pages % 10) != 0:
-            print 'scraping pages', (j + 1) * 10, 'to', pages + 1
+            print('scraping pages', (j + 1) * 10, 'to', pages + 1)
             for i in range((j + 1) * 10, pages + 1):
                 cur_url = url + '?page=' + str(i)
                 if verbose:
-                    print 'scraping', cur_url
+                    print('scraping', cur_url)
                 # scrape_a_review_page(cur_url)
                 t = threading.Thread(
                     target=scrape_a_review_page, args=(cur_url,))
@@ -609,7 +636,7 @@ def scrape_reviews_parallel(strains, pool_size=None):
 
 
 def scrape_reviews_page_threads_map(arglist):
-    print 'scraping', arglist[0]  # arglist[0].split('/')[4]
+    print('scraping', arglist[0])  # arglist[0].split('/')[4]
     time.sleep(1.5)
     scrape_reviews_page_threads(*arglist)
 
@@ -644,7 +671,7 @@ def scrape_reviews_page_threads(strain, url, genetics, verbose=True, num_threads
         time.sleep(2)
 
     num_reviews = int(reviews_block[0].get_text().strip('(').strip(')'))
-    print num_reviews, 'total reviews to scrape'
+    print(num_reviews, 'total reviews to scrape')
     pages = num_reviews / 8
     scrapetime = datetime.utcnow().isoformat()
     threads = []
@@ -663,7 +690,7 @@ def scrape_reviews_page_threads(strain, url, genetics, verbose=True, num_threads
         rev_cnt = coll.find({'review_count': {'$exists': True}})[0][
             'review_count'][-1] + 1  # correct for leafly miscounting
         if rev_cnt == num_reviews:
-            print 'already up-to-date'
+            print('already up-to-date')
             return
 
     if num_reviews == 0:
@@ -673,7 +700,7 @@ def scrape_reviews_page_threads(strain, url, genetics, verbose=True, num_threads
         for i in range(pages + 1):
             cur_url = url + '?page=' + str(i)
             if verbose:
-                print 'scraping', cur_url
+                print('scraping', cur_url)
             # scrape_a_review_page(cur_url)
             t = threading.Thread(target=scrape_a_review_page, args=(cur_url,))
             t.start()
@@ -686,11 +713,11 @@ def scrape_reviews_page_threads(strain, url, genetics, verbose=True, num_threads
         else:
             delay = 5
         for j in range(pages / 10):
-            print 'scraping pages', j * 10, 'to', (j + 1) * 10
+            print('scraping pages', j * 10, 'to', (j + 1) * 10)
             for i in range(j * 10, (j + 1) * 10):
                 cur_url = url + '?page=' + str(i)
                 if verbose:
-                    print 'scraping', cur_url
+                    print('scraping', cur_url)
                 # scrape_a_review_page(cur_url)
                 t = threading.Thread(
                     target=scrape_a_review_page, args=(cur_url,))
@@ -703,11 +730,11 @@ def scrape_reviews_page_threads(strain, url, genetics, verbose=True, num_threads
             time.sleep(delay)
 
         if (pages % 10) != 0:
-            print 'scraping pages', (j + 1) * 10, 'to', pages + 1
+            print('scraping pages', (j + 1) * 10, 'to', pages + 1)
             for i in range((j + 1) * 10, pages + 1):
                 cur_url = url + '?page=' + str(i)
                 if verbose:
-                    print 'scraping', cur_url
+                    print('scraping', cur_url)
                 # scrape_a_review_page(cur_url)
                 t = threading.Thread(
                     target=scrape_a_review_page, args=(cur_url,))
@@ -739,7 +766,7 @@ def scrape_a_review_page(url, verbose=True):
     reviews_soup = rev_soup.findAll(
         'li', {'class': 'page-item divider bottom padding-listItem'})
     if verbose:
-        print len(reviews_soup), 'reviews on page'
+        print(len(reviews_soup), 'reviews on page')
     try:
         delay = 1
         if len(reviews_soup) == 0:  # try again
@@ -751,7 +778,7 @@ def scrape_a_review_page(url, verbose=True):
                 reviews_soup = rev_soup.findAll(
                     'li', {'class': 'page-item divider bottom padding-listItem'})
                 if verbose:
-                    print 'try try again:', len(reviews_soup), 'reviews on page'
+                    print('try try again:', len(reviews_soup), 'reviews on page')
                 if len(reviews_soup) != 0:
                     break
 
@@ -776,12 +803,12 @@ def scrape_a_review_page(url, verbose=True):
             datadict['link'] = review_link
             datadict['date'] = date
             if coll.find(datadict).count() > 0:
-                print 'already in db'
+                print('already in db')
                 continue
-            print 'not in db, adding'
+            print('not in db, adding')
             coll.insert_one(datadict)
     except Exception as e:
-        print 'ERROR DAMMIT:', e
+        print('ERROR DAMMIT:', e)
 
     client.close()
 
@@ -803,7 +830,7 @@ def check_if_review_counts_match():
     for c in db.collection_names():
         if c in coll_skips:
             continue
-        print c
+        print(c)
         counts = review_counts[c.lower()] + 1  # apparantly leafly can't count
         # account for scrape_time, review_counts, and genetics
         reviews = db[c].count() - 3
@@ -822,7 +849,7 @@ def check_if_review_counts_match_one(strain):
     try:
         entry = list(coll.find({'strain': strain}))[0]
     except Exception as e:
-        print e
+        print(e)
         return True
     review_counts = entry['review_counts'] + 1  # apparantly leafly can't count
     # account for scrape_time, review_counts, and genetics
@@ -846,7 +873,7 @@ def scrape_remainder(strains):
     for s in strains:
         update = check_if_review_counts_match_one(s)
         if update:
-            print 'needs update'
+            print('needs update')
             needs_update.append(s)
 
     scrape_reviews_parallel(needs_update)
@@ -887,7 +914,7 @@ def scrape_individ_pages(df):
     isok = [] # for keeping track of how many requests were ok
     for i, r in df.iterrows():
         if coll.find({'link':r['link'], 'isok':True}).count() != 0:
-            print 'already scraped', r['link']
+            print('already scraped', r['link'])
             continue
 
         ok = False
@@ -902,7 +929,7 @@ def scrape_individ_pages(df):
                 break
 
         isok.append(res.ok)
-        print 'on', i, 'response:', res.ok
+        print('on', i, 'response:', res.ok)
         soup = bs(res.content, 'lxml')
         fullReview = soup.findAll('div', {'class': 'copy--md copy-md--xl padding-rowItem--xl notranslate'})[0].get_text()
         tags = soup.findAll('div', {'class':'divider bottom padding-listItem'})
@@ -997,7 +1024,7 @@ def scrape_one_individ(r):
     db = client['leafly_full_reviews']
     coll = db['full_reviews']
     if coll.find({'link':r['link'], 'isok':True}).count() != 0:
-        print 'already scraped', r['link']
+        print('already scraped', r['link'])
         client.close()
         return None
 
@@ -1009,7 +1036,7 @@ def scrape_one_individ(r):
 
     res = requests.get(BASE_URL + r['link'])
     isok = res.ok
-    print 'on', r['product'], 'response:', res.ok
+    print('on', r['product'], 'response:', res.ok)
     soup = bs(res.content, 'lxml')
     fullReview = soup.findAll('div', {'class': 'copy--md copy-md--xl padding-rowItem--xl notranslate'})[0].get_text()
     tags = soup.findAll('div', {'class':'divider bottom padding-listItem'})
@@ -1107,7 +1134,6 @@ def get_already_scraped():
 
 
 if __name__ == "__main__":
-
     driver = setup_driver()
     cooks = clear_prompts(driver)  # clears prompts and saves cookies
 

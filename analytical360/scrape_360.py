@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 import re
 import os
-import cPickle as pk
+import pickle as pk
 from collections import deque
 import string
 import time
@@ -233,23 +233,23 @@ def scrape_site(df, base_im_path='analytical360/new_images/', delay=None, sql=No
         clean_names.append(clean_name)
         save_path = base_im_path + clean_name + id + '.jpg'
         if mongo is not None and coll.find({'link':link}).count() != 0:
-            print 'already processed', r['name']
+            print('already processed', r['name'])
             continue
 
-        print r['name']
+        print(r['name'])
 
         names.append(r['name'])
         driver.get(link)
-        print link
+        print(link)
         try:
             img = driver.find_element_by_xpath('//*[@id="mainwrapper"]/div[4]/div[1]/div[5]/div/div[1]/img[1]')
             src = img.get_attribute('src')
             im_sources.append(src)
-            print src
+            print(src)
             if os.path.exists(save_path):
-                print r['name'], 'already saved image'
+                print(r['name'], 'already saved image')
             else:
-                print save_path
+                print(save_path)
                 if not isedible:
                     try:
                         download_image(src, save_path, headers, cooks)
@@ -354,9 +354,9 @@ def parse_raw_scrape(cannabinoids, terpenes, names):
                         'activated':'activated_total',
                         'active':'activated_total'} # converts similar strings to the dict key forf cannabiniod dict
     cannabinoid_dict = {}
-    screen_tups = zip(range(len(trail)), trail, cannabinoid_strs)
+    screen_tups = list(zip(list(range(len(trail))), trail, cannabinoid_strs))
     for i, cann in enumerate(cannabinoids):
-        print i
+        print(i)
         temp_cann = c_dict_keys[:]
         #cannabinoid_dict.setdefault('name', []).append(names[i])
         for ca in cann:
@@ -367,7 +367,7 @@ def parse_raw_scrape(cannabinoids, terpenes, names):
                     # cannabinoid_strs.rotate(-idx) # move that entry to the beginning of the list
                     # trail.rotate(-idx)
                     # screen_tups = zip(range(len(trail)), trail, cannabinoid_strs)
-                    print 'found', c, ca
+                    print('found', c, ca)
                     if c in conversion_dict:
                         cannabinoid_dict.setdefault(conversion_dict[c], []).append(num)
                         temp_cann.remove(conversion_dict[c])
@@ -377,7 +377,7 @@ def parse_raw_scrape(cannabinoids, terpenes, names):
                     break
 
         if len(temp_cann) > 0:
-            print 'didn\'t scrape:', temp_cann
+            print('didn\'t scrape:', temp_cann)
             for t in temp_cann:
                 cannabinoid_dict.setdefault(t, []).append('')
 
@@ -417,7 +417,7 @@ def parse_raw_scrape(cannabinoids, terpenes, names):
                         'TERPENE-TOTAL':'total_terpenes'}
     terp_dict = {}
     for i, terp in enumerate(terpenes):
-        print i
+        print(i)
         temp_cann = t_dict_keys[:]
         #terp_dict.setdefault('name', []).append(names[i])
         for ta in terp:
@@ -425,7 +425,7 @@ def parse_raw_scrape(cannabinoids, terpenes, names):
                 has_str, num = find_string(ta, c)
                 if has_str:
                     idx = list(terp_strs).index(c)
-                    print 'found', c, ta
+                    print('found', c, ta)
                     if c in terp_conv_dict:
                         terp_dict.setdefault(terp_conv_dict[c], []).append(num)
                         temp_cann.remove(terp_conv_dict[c])
@@ -435,15 +435,15 @@ def parse_raw_scrape(cannabinoids, terpenes, names):
                     break
 
         if len(temp_cann) > 0:
-            print 'didn\'t scrape:', temp_cann
+            print('didn\'t scrape:', temp_cann)
             for t in temp_cann:
                 terp_dict.setdefault(t, []).append('')
 
     cannabinoid_dict['name'] = names
     for k in cannabinoid_dict:
-        print k, len(cannabinoid_dict[k])
+        print(k, len(cannabinoid_dict[k]))
     for k in terp_dict:
-        print k, len(terp_dict[k])
+        print(k, len(terp_dict[k]))
 
     cdf = pd.DataFrame(cannabinoid_dict)
     tdf = pd.DataFrame(terp_dict)
@@ -494,7 +494,7 @@ def check_if_fields_present():
     cannabinoid_strs = ['thc-a', 'thc', 'cbn', 'thc total', 'thc-total', 'cbd-a', 'cbd', 'cbd-total', 'cbd total', 'cbg', 'cbc', 'activated total', 'activated', 'active']
     for t, c in zip(trail, cannabinoid_strs):
         has_str = check_for_string(cannabinoids, c, t)
-        print c, np.mean(has_str)
+        print(c, np.mean(has_str))
 
 def stuff():
     testdf = pd.DataFrame({'name':names})

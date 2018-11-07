@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import cPickle as pk
+import pickle as pk
 import plotly.plotly as py
 import plotly.graph_objs as go
 from sklearn.cluster import KMeans
@@ -88,12 +88,12 @@ for i in range(2, num_kmeans):
     sil_scores.append(silhouette_score(cluster_data, labels, metric='euclidean'))
 
 endTime = time.time()
-print 'took', endTime - start, 'seconds'
+print('took', endTime - start, 'seconds')
 
-plt.scatter(range(2, num_kmeans), sil_scores)
+plt.scatter(list(range(2, num_kmeans)), sil_scores)
 plt.show()
 
-plt.scatter(range(2, num_kmeans), scores)
+plt.scatter(list(range(2, num_kmeans)), scores)
 plt.show()
 
 pca= PCA(n_components=10)
@@ -102,7 +102,7 @@ chem_pca = pca.fit_transform(cluster_data)
 cur_km = kmeanses[1]
 traces = []
 for i in range(3):
-    print 'group', i, chem_pca[cur_km.labels_ == i, 0].shape
+    print('group', i, chem_pca[cur_km.labels_ == i, 0].shape)
     x, y, z = chem_pca[cur_km.labels_ == i, 0], chem_pca[cur_km.labels_ == i, 1], chem_pca[cur_km.labels_ == i, 3]
     traces.append(go.Scatter3d(
         x=x,
@@ -137,7 +137,7 @@ py.plot(fig, filename='3 KMeans clusters of strains by chemistry', world_readabl
 groups = []
 for i in range(3):
     groups.append(product_chem_df[cur_km.labels_ == i])
-    print groups[i].mean()
+    print(groups[i].mean())
 
 for c in product_chem_df.columns:
     #f = plt.figure(figsize=(20, 8))

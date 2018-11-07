@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 import re
 import os
-import cPickle as pk
+import pickle as pk
 import pandas as pd
 import analytical360.scrape_360 as sc3
 import multiprocessing as mp
@@ -58,7 +58,7 @@ def scrape_newstuff(pages_left):
         os.mkdir(arch_path)
 
     for i in pages_left:
-        print i
+        print(i)
         res = requests.get(MAIN_URL + '/page/' + str(i))
         if not res.ok:
             'print failed on:', MAIN_URL + '/page/' + str(i)
@@ -67,7 +67,7 @@ def scrape_newstuff(pages_left):
 
         if not res.ok:
             failed.append(MAIN_URL + '/page/' + str(i))
-            print 'failed twice'
+            print('failed twice')
             continue
 
         soup = bs(res.content)
@@ -81,9 +81,9 @@ def scrape_newstuff(pages_left):
             if a:
                 links.append(a.get('href'))
                 names.append(a.text)
-                print 'success!'
+                print('success!')
             else:
-                print 'no link'
+                print('no link')
                 failed.append(MAIN_URL + '/page/' + str(i))
 
     df = pd.DataFrame({'link':links, 'name':names})
@@ -131,8 +131,8 @@ if __name__ == "__main__":
     last_num_pages = 3823 # last time I checked
     if num_pages != last_num_pages:
         max_diff = num_pages - last_num_pages
-        print max_diff, 'new pages'
-        pages_left = range(1, max_diff+1)
+        print(max_diff, 'new pages')
+        pages_left = list(range(1, max_diff+1))
         # scrape_newstuff(pages_left)
 
     #driver = setup_driver()
@@ -142,7 +142,7 @@ if __name__ == "__main__":
     # for scraping entire archives...gets links from all pages
     scrape_all = False
     if scrape_all:
-        df, failed = scrape_newstuff(range(1, num_pages + 1))
+        df, failed = scrape_newstuff(list(range(1, num_pages + 1)))
         df.to_pickle('analytical360/archives_links_df.pk')
     else:
         df = pd.read_pickle('analytical360/archives_links_df.pk')
@@ -198,7 +198,7 @@ if __name__ == "__main__":
         full_df['clean_name'] = clean_names
         skip_cols = set(['name', 'isedible', 'filename', 'clean_name'])
         for c in full_df.columns:
-            print c
+            print(c)
             if c in skip_cols:
                 continue
 
@@ -213,15 +213,15 @@ if __name__ == "__main__":
         filenames = []
         rows_iter = clean_flow.iterrows()
         for c in clean_names:
-            i, next_r = rows_iter.next()
+            i, next_r = next(rows_iter)
             while next_r['clean_name'] != c:
-                i, next_r = rows_iter.next()
+                i, next_r = next(rows_iter)
             filenames.append(next_r['im_name'])
 
         full_df2['filename'] = filenames
         full_df2['clean_name'] = clean_names
         for c in full_df2.columns:
-            print c
+            print(c)
             if c in skip_cols:
                 continue
 
@@ -279,7 +279,7 @@ if __name__ == "__main__":
         drop_cols = ['thc', 'cbd', 'activated_total', 'Ocimene', 'beta_pinene', 'cbda', 'thca']
 
         for c in drop_cols:
-            print c
+            print(c)
             all_df.drop(c, axis=1, inplace=True)
 
         matches = sc3.match_up_leafly_names(all_df['clean_name'])
@@ -308,7 +308,7 @@ if __name__ == "__main__":
         all_df.to_pickle('analytical360/data_df_11-13-2016.pk')
         leaf_df.to_pickle('analytical360/leafly_matched_df_11-13-2016.pk')
 
-        print leaf_df.groupby('name').count().shape[0], 'unique strains overlapping with leafly'
+        print(leaf_df.groupby('name').count().shape[0], 'unique strains overlapping with leafly')
 
         product_chem_df = leaf_df.groupby('name').mean()
         product_chem_df.drop('mask', axis=1, inplace=True)
@@ -335,12 +335,12 @@ if __name__ == "__main__":
             sil_scores.append(silhouette_score(cluster_data, labels, metric='euclidean'))
 
         endTime = time.time()
-        print 'took', endTime - start, 'seconds'
+        print('took', endTime - start, 'seconds')
 
-        plt.scatter(range(2, num_kmeans), sil_scores)
+        plt.scatter(list(range(2, num_kmeans)), sil_scores)
         plt.show()
 
-        plt.scatter(range(2, num_kmeans), scores)
+        plt.scatter(list(range(2, num_kmeans)), scores)
         plt.show()
 
         pca= PCA(n_components=10)
@@ -349,7 +349,7 @@ if __name__ == "__main__":
         cur_km = kmeanses[1]
         traces = []
         for i in range(3):
-            print 'group', i, chem_pca[cur_km.labels_ == i, 0].shape
+            print('group', i, chem_pca[cur_km.labels_ == i, 0].shape)
             x, y, z = chem_pca[cur_km.labels_ == i, 0], chem_pca[cur_km.labels_ == i, 1], chem_pca[cur_km.labels_ == i, 3]
             traces.append(go.Scatter3d(
                 x=x,
@@ -385,7 +385,7 @@ if __name__ == "__main__":
         groups = []
         for i in range(3):
             groups.append(product_chem_df[cur_km.labels_ == i])
-            print groups[i].mean()
+            print(groups[i].mean())
 
         pk.dump(groups, open('analytical360/3_kmeans_chem_groups_pd.pk', 'w'), 2)
 

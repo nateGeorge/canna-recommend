@@ -1,5 +1,5 @@
 import unittest
-import scrape_leafly as sl
+from . import scrape_leafly as sl
 import selenium
 
 

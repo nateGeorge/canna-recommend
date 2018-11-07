@@ -7,7 +7,7 @@ from scipy import spatial
 from fancyimpute import BiScaler, KNN, NuclearNormMinimization, SoftImpute
 from sklearn.preprocessing import StandardScaler
 import os
-import cPickle as pk
+import pickle as pk
 
 # tf-idf similarity
 review_vects_file = 'leafly/review_vects_full.pk'
@@ -33,7 +33,7 @@ else:
     # pre-compute distances for efficiency
     dist_list = []
     for i in range(review_vects.shape[0]):
-        print i
+        print(i)
         dists = []
         for j in range(review_vects.shape[0]):
             dists.append(spatial.distance.cosine(review_vects[j], review_vects[i]))
@@ -42,7 +42,7 @@ else:
 
     dist_list2 = []
     for i in range(review_vects2.shape[0]):
-        print i
+        print(i)
         dists = []
         for j in range(review_vects2.shape[0]):
             dists.append(spatial.distance.cosine(review_vects2[j], review_vects2[i]))

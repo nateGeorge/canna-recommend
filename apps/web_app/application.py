@@ -5,7 +5,7 @@
 import leafly.graphlab_production as glp
 import leafly.nlp_funcs as nl
 import json
-import cPickle as pk
+import pickle as pk
 
 from flask import Flask, request
 import flask
@@ -38,15 +38,15 @@ def send_words():
     # print request.form['words']
     # word_list = request.form['words']
     # print word_list
-    print request.get_json()
-    print request.json
-    print request.mimetype
-    print request.values
+    print(request.get_json())
+    print(request.json)
+    print(request.mimetype)
+    print(request.values)
     words = request.form.getlist('word_list[]')
-    print words
+    print(words)
     recs, top3 = glp.get_recs(
         rec_engine, words, prod_group_dfs, prod_top_words, prod_user='products')
-    print top3
+    print(top3)
     resp = flask.Response(json.dumps({'recs': top3.tolist()}))
     resp.headers['Access-Control-Allow-Origin'] = '*'
     return resp

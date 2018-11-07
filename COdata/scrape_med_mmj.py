@@ -19,7 +19,7 @@ def download_file(url):
 
 
 def download_reports(reports):
-    for y in reports.keys():
+    for y in list(reports.keys()):
         for d in reports[y]:
             fname = download_file(d)
 
@@ -35,7 +35,7 @@ def parse_pdf(file_n):
             if len(words) > 0 and words[0] in genderWords:
                 table1 = True
             if table1:
-                print words
+                print(words)
                 table1dat.append(words)
                 if len(words) == 0:
                     table1 = False

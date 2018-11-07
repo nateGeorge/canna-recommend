@@ -6,7 +6,7 @@ import leafly.nlp_funcs as nl
 import leafly.scrape_leafly as sl
 from collections import Counter
 import pandas as pd
-import cPickle as pk
+import pickle as pk
 from sklearn.feature_extraction.text import TfidfVectorizer
 import numpy as np
 import collections
@@ -126,7 +126,7 @@ def get_top_words(group_dfs, num_words=200):
     top_vects = {}
     top_words_set = set()
     word_list = []
-    for i in range(len(group_dfs.keys())):
+    for i in range(len(list(group_dfs.keys()))):
         words, vects, review_vects = nl.get_top_words_lemmatize(
             group_dfs[i])  # , num_words)
         all_review_vects[i] = review_vects
@@ -155,7 +155,7 @@ def get_top_ngrams(group_dfs, num_words=200, ngram_range=(2, 2)):
     top_words = {}
     top_words_set = set()
     word_list = []
-    for i in range(len(prod_group_dfs.keys())):
+    for i in range(len(list(prod_group_dfs.keys()))):
         words, vects = nl.get_top_words_lemmatize(
             group_dfs[i], 50, ngram_range=ngram_range)
         top_words_set = top_words_set | set(words)
@@ -191,7 +191,7 @@ def pickle_top_words(top_words, filename='leafly/top_words.pk'):
         pk.dump(top_words, open(filename, 'w'), 2)
         return 1
     except Exception as e:
-        print 'Error pickling:', e
+        print('Error pickling:', e)
         return 0
 
 
@@ -260,7 +260,7 @@ def get_recs(rec_engine, words, group_dfs, top_words, prod_user='user', size=3):
     '''
     if prod_user == 'products':
         sims = get_prod_similarity(words, top_words)
-        top_idx = np.argsort(sims.values())[::-1]
+        top_idx = np.argsort(list(sims.values()))[::-1]
         # for now return the top 20 most reviewed strains in the category
         prods = group_dfs[top_idx[0]]['product'].value_counts()
         prods20 = prods[:20].index
@@ -289,14 +289,14 @@ def get_better_recs(link_dict, rec_engine, words, group_dfs, top_words, prod_use
     '''
     if prod_user == 'products':
         sims = get_prod_similarity(words, top_words)
-        top_idxs = np.argsort(sims.values())[::-1] # highest to lowest relevance
+        top_idxs = np.argsort(list(sims.values()))[::-1] # highest to lowest relevance
         # for now return the top 20 most reviewed strains in the category
         prods = group_dfs[top_idxs[0]]['product'].value_counts().index
         prods20 = prods[:size * 5]
         links = [link_dict[p] for p in prods]
         links20 = np.array([link_dict[p] for p in prods20])
-        idx20 = np.random.choice(range(len(prods20)), size=size, replace=False)
-        print idx20
+        idx20 = np.random.choice(list(range(len(prods20))), size=size, replace=False)
+        print(idx20)
         return prods, prods[idx20], links, links20[idx20]
 
 
@@ -386,11 +386,11 @@ if __name__ == "__main__":
     # for checking out the top few words in each group
     df_prod_top_words = {}
     for p in prod_top_words:
-        df_prod_top_words[p] = pd.DataFrame({'word':prod_top_words[p].keys(), 'vector':prod_top_words[p].values()})
+        df_prod_top_words[p] = pd.DataFrame({'word':list(prod_top_words[p].keys()), 'vector':list(prod_top_words[p].values())})
         df_prod_top_words[p] = df_prod_top_words[p].sort_values(by='vector', ascending=False)
 
     for p in df_prod_top_words:
-        print df_prod_top_words[p]['word'].head(20)
+        print(df_prod_top_words[p]['word'].head(20))
 
     # user_top_words, user_word_counter = get_top_words(user_group_dfs)
     #

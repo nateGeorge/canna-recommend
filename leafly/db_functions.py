@@ -13,7 +13,7 @@ def drop_everything():
     for c in db.collection_names():
         if c in coll_skips:
             continue
-        print c
+        print(c)
         db[c].drop()
 
     client.close()
@@ -32,7 +32,7 @@ def count_reviews(dbname=DB_NAME):
         if c in coll_skips:
             continue
         count = db[c].count() - 3  # correct for info entries
-        print c, 'number of reviews:', count
+        print(c, 'number of reviews:', count)
         total += count
 
     client.close()
@@ -95,7 +95,7 @@ def backup_dataset(db1=DB_NAME, db2=None):
     for c in db.collection_names():
         if c == 'system.indexes':
             continue
-        print c
+        print(c)
         db2[c].insert_many(db[c].find())
 
     client.close()
@@ -151,7 +151,7 @@ def remove_dupes(test=True, dbname=None):
             for id in doc["unique_ids"]:
                 response.append(id)
 
-        print 'removing', len(response), 'dupes from', c
+        print('removing', len(response), 'dupes from', c)
         db[c].delete_many({"_id": {"$in": response}})
 
         cursor = db[c].aggregate(
@@ -192,7 +192,7 @@ def subset_data():
     for c in db.collection_names():
         if c in coll_skips:
             continue
-        print c
+        print(c)
         if db[c].count() > 99:
             break
 
@@ -222,7 +222,7 @@ def test_remove_dupes(c):
     )
 
     cursor = list(cursor)
-    print cursor
+    print(cursor)
     return
 
     response = []
@@ -262,7 +262,7 @@ def check_if_rev_count(dbname=None):
     for c in db.collection_names():
         if c in coll_skips:
             continue
-        print c
+        print(c)
         rev_cnt = db[c].find({'review_count': {'$exists': True}}).count()
         if rev_cnt > 0:
             has_rev_cnt.append(1)
@@ -272,8 +272,8 @@ def check_if_rev_count(dbname=None):
 
     df = pd.DataFrame({'product': products, 'has_review_count': has_rev_cnt})
 
-    print 'number products with review count:', df[df['has_review_count'] == 1].shape[0]
-    print 'number products withOUT review count:', df[df['has_review_count'] == 0].shape[0]
+    print('number products with review count:', df[df['has_review_count'] == 1].shape[0])
+    print('number products withOUT review count:', df[df['has_review_count'] == 0].shape[0])
 
     return df
 
@@ -328,7 +328,7 @@ def check_scraped_reviews(dbname=None, rem_dupe=False):
             else:
                 needs_scrape.append(0)
         else:
-            print c
+            print(c)
             reviews_scraped.append(0)
             products.append(c)
             review_count.append(rev_cnt)
@@ -336,7 +336,7 @@ def check_scraped_reviews(dbname=None, rem_dupe=False):
 
     df = pd.DataFrame({'product': products, 'reviews_scraped': reviews_scraped,
                        'review_count': review_count, 'needs_scrape': needs_scrape})
-    print df[df['needs_scrape'] == 1].shape[0], 'products need scraping out of', df.shape[0]
+    print(df[df['needs_scrape'] == 1].shape[0], 'products need scraping out of', df.shape[0])
 
     return needs_scrape, df
 
@@ -368,9 +368,9 @@ def check_for_metadata(dbname=DB_NAME):
 
     df = pd.DataFrame({'product': products, 'gen_cnt': has_genetics,
                        'time_cnt': has_time, 'rev_cnt': has_cnt})
-    print df.shape[0], 'total products,', df.gen_cnt.sum(), \
+    print(df.shape[0], 'total products,', df.gen_cnt.sum(), \
         'count with genetics', df.time_cnt.sum(), 'with scrapetimes', \
-        df.rev_cnt.sum(), 'with review_count'
+        df.rev_cnt.sum(), 'with review_count')
 
     return df
 
@@ -399,5 +399,5 @@ def count_prods_with_no_revs(dbname=DB_NAME):
         else:
             no_reviews += 1
 
-    print 'number of products with reviews:', has_reviews
-    print 'number of products withOUT reviews:', no_reviews
+    print('number of products with reviews:', has_reviews)
+    print('number of products withOUT reviews:', no_reviews)

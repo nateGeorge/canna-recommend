@@ -9,7 +9,7 @@ coll_skips = set(['system.indexes', 'review_counts'])
 for c in db.collection_names():
     if c in coll_skips:
         continue
-    print c
+    print(c)
     db[c].drop()
 
 client.close()

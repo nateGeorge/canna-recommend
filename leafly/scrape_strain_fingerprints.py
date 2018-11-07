@@ -1,5 +1,5 @@
 import requests
-import scrape_leafly as sl
+from . import scrape_leafly as sl
 from bs4 import BeautifulSoup as bs
 from selenium import webdriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
@@ -8,7 +8,7 @@ from fake_useragent import UserAgent
 import multiprocessing as mp
 import os
 import time
-import cPickle as pk
+import pickle as pk
 
 ua = UserAgent()
 
@@ -37,7 +37,7 @@ def test_im_download():
     imurl = None
     for i in ims:
         src = i.get('src')
-        print src
+        print(src)
         if re.search('.*strains/testing.*', src) is not None:
             imurl = src
 
@@ -60,7 +60,7 @@ def get_chem_images(strains):
     for s in strains:
         if s.split('/')[1].lower() == 'edible':
             continue
-        print 'checking', s
+        print('checking', s)
         agent = ua.random  # select a random user agent
         headers = {
             "Connection": "close",  # another way to cover tracks
@@ -77,7 +77,7 @@ def get_chem_images(strains):
                 imurl = src
 
         if imurl is not None:
-            print 'found imurl:', imurl
+            print('found imurl:', imurl)
             all_imurls.append(imurl)
 
     return all_imurls
@@ -91,7 +91,7 @@ def get_one_chem_im(strain_cooks_tuple):
     cooks = strain_cooks_tuple[1]
     if s.split('/')[1].lower() == 'edible':
         return
-    print 'checking', s
+    print('checking', s)
     agent = ua.random  # select a random user agent
     headers = {
         "Connection": "close",  # another way to cover tracks
@@ -113,7 +113,7 @@ def get_one_chem_im(strain_cooks_tuple):
         src = i.get('src')
         if re.search('.*strains/testing.*', src) is not None:
             imurl = src
-            print 'found', imurl
+            print('found', imurl)
 
     return s, imurl, res
 
@@ -126,8 +126,8 @@ def multithread_dl_ims(strains, cooks):
     '''
     pool_size = mp.cpu_count()
     pool = mp.Pool(processes=pool_size)
-    a = pool.map(func=get_one_chem_im, iterable=zip(
-        strains, [cooks] * len(strains)))
+    a = pool.map(func=get_one_chem_im, iterable=list(zip(
+        strains, [cooks] * len(strains))))
     return [i for i in a if i is not None]
 
 

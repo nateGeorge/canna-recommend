@@ -1,3 +1,3 @@
 while True:
-    key = raw_input()
-    print key
+    key = input()
+    print(key)

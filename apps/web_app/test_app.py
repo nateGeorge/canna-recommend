@@ -2,7 +2,7 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 import json
-import cPickle as pk
+import pickle as pk
 import re
 from flask import Flask, request
 import flask
@@ -43,43 +43,43 @@ def send_words():
     # print request.form['words']
     # word_list = request.form['words']
     # print word_list
-    print request.get_json()
-    print request.json
-    print request.mimetype
-    print request.values
+    print(request.get_json())
+    print(request.json)
+    print(request.mimetype)
+    print(request.values)
     words = request.form.getlist('word_list[]')
-    print words
+    print(words)
     # get slightly more recommendations than show up on one page
     recs, top, links, toplinks = glp.get_better_recs(link_dict,
         rec_engine, words, prod_group_dfs, prod_top_words, prod_user='products', size=15)
     # convert to pretty form
-    print top
+    print(top)
     cln_recs = clean_recs(top)
-    print cln_recs
+    print(cln_recs)
     # need to convert numpy array to list so it is serializable
     toplinks = list(toplinks)
-    print links
-    print toplinks
+    print(links)
+    print(toplinks)
     resp = flask.Response(json.dumps({'recs': cln_recs, 'links':toplinks}))
     resp.headers['Access-Control-Allow-Origin'] = '*'
     return resp
 
 @app.route('/send_leafly_user', methods=['POST', 'OPTIONS'])
 def send_leafly_user():
-    print request.get_json()
-    print request.json
-    print request.mimetype
-    print request.values
-    print request.form
+    print(request.get_json())
+    print(request.json)
+    print(request.mimetype)
+    print(request.values)
+    print(request.form)
     user = request.form.getlist('user')
-    print user
-    print user[0]
+    print(user)
+    print(user[0])
     k = int(request.form.getlist('k')[0])
 
     recs = glp.make_rec(rec_engine, user[0], users_in_rec, k)
     cln_recs = clean_recs(recs)
 
-    print recs
+    print(recs)
     if recs is None:
         flask.Response(json.dumps({'recs':None, 'links':None}))
         resp.headers['Access-Control-Allow-Origin'] = '*'

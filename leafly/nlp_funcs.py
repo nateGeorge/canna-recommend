@@ -47,9 +47,9 @@ def get_stopwords():
                         'really', 'love', 'smell', 'smoke', 'favorite', 'best']
 
     ESW2 = ['amazing',
-            u'blue',
-            u'dream',
-            u'happy',
+            'blue',
+            'dream',
+            'happy',
             # u'head',
             # u'pain',
             # u'relaxing',
@@ -57,7 +57,7 @@ def get_stopwords():
             # u'sour',
             # u'strong',
             # u'sweet',
-            u'time']
+            'time']
 
     # ESW3 = ['bud',
     #         'definitely',
@@ -422,7 +422,7 @@ def get_sents_with_sleep(df):
     new_df['sent_count'] = 0
     punct_no_per = re.sub('\.', '', string.punctuation)
     for i, r in new_df.iterrows():
-        print i, new_df.shape[0]
+        print(i, new_df.shape[0])
         sentences = []
         scount = 0
         sents = list(parser(r['review']).sents)

@@ -35,10 +35,10 @@ for i in range(2, num_kmeans):
     sil_scores.append(silhouette_score(review_vects, labels, metric='euclidean'))
 
 endTime = time.time()
-print 'took', endTime - start, 'seconds'
+print('took', endTime - start, 'seconds')
 
 data = go.Scatter(
-        x=range(2, num_kmeans),
+        x=list(range(2, num_kmeans)),
         y=scores,
         mode='markers',
         marker=dict(
@@ -68,7 +68,7 @@ for km in kmeanses:
     sil_scores.append(silhouette_score(review_vects, labels, metric='euclidean'))
 
 # shit...looks like 2 clusters is best, with 200 or full tfidf
-plt.scatter(range(2, num_kmeans), sil_scores)
+plt.scatter(list(range(2, num_kmeans)), sil_scores)
 plt.show()
 
 
@@ -116,10 +116,10 @@ for i in range(3):
     words = review_vects[cur_km.labels_ == i, :]
     avg_vects = words.mean(axis=0)
     idx = np.argsort(avg_vects)[::-1]
-    print 'group', i
-    print zip(avg_vects[idx][:10], vect_words[idx][:10])
-    print ''
-    print ''
+    print('group', i)
+    print(list(zip(avg_vects[idx][:10], vect_words[idx][:10])))
+    print('')
+    print('')
 
 
 
@@ -137,10 +137,10 @@ for i in range(2, num_kmeans):
     scores.append(-km.score(review_vects)) # withi-cluster sum of squares
 
 endTime = time.time()
-print 'took', endTime - start, 'seconds'
+print('took', endTime - start, 'seconds')
 
 data = go.Scatter(
-        x=range(2, num_kmeans),
+        x=list(range(2, num_kmeans)),
         y=scores,
         mode='markers',
         marker=dict(
@@ -170,7 +170,7 @@ for km in kmeanses:
     sil_scores.append(silhouette_score(review_vects, labels, metric='euclidean'))
 
 # shit...looks like 2 clusters is best, with 200 or full tfidf
-plt.scatter(range(2, num_kmeans), sil_scores)
+plt.scatter(list(range(2, num_kmeans)), sil_scores)
 plt.show()
 
 # lets look at the clusters
@@ -229,7 +229,7 @@ for i in range(2, num_kmeans):
     scores0.append(-km.score(review_vects)) # withi-cluster sum of squares
 
 endTime = time.time()
-print 'took', endTime - start, 'seconds'
+print('took', endTime - start, 'seconds')
 
 # look at silhouette_score
 sil_scores0 = []
@@ -241,7 +241,7 @@ for km in kmeanses0:
 # 15 clusters looks best
 f = plt.figure()
 ax = f.add_subplot(1, 1, 1)
-ax.scatter(range(2, num_kmeans), sil_scores0)
+ax.scatter(list(range(2, num_kmeans)), sil_scores0)
 ax.set_title('group0 clusters')
 plt.show()
 
@@ -261,7 +261,7 @@ for i in range(2, num_kmeans):
     scores1.append(-km.score(review_vects)) # withi-cluster sum of squares
 
 endTime = time.time()
-print 'took', endTime - start, 'seconds'
+print('took', endTime - start, 'seconds')
 
 # look at silhouette_score
 sil_scores1 = []
@@ -273,6 +273,6 @@ for km in kmeanses1:
 # 7 clusters looks best for this one
 f = plt.figure()
 ax = f.add_subplot(1, 1, 1)
-ax.scatter(range(2, num_kmeans), sil_scores1)
+ax.scatter(list(range(2, num_kmeans)), sil_scores1)
 ax.set_title('group1 clusters')
 plt.show()

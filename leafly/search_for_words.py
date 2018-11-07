@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import string
 import re
 from textblob import TextBlob # need this for sentiment analysis
-import cPickle as pk
+import pickle as pk
 import os
 import easygui as eg
 from time import time
@@ -59,19 +59,19 @@ def get_top_strains(df, word='pain', plot=False, tfvect=None, review_vects=None,
     try:
         pain_idx = np.where(vect_words == word)[0][0]
     except:
-        print word, 'not in vectorizer.  Try increasing max/min_df bounds?'
+        print(word, 'not in vectorizer.  Try increasing max/min_df bounds?')
         return None, None, None
 
     max_pain = np.argmax(review_vects[:, pain_idx])
     max_pain_sort = np.argsort(review_vects[:, pain_idx])[::-1]
 
-    print 'top 10 strains talked about for', word, ':', zip(product_list[max_pain_sort][:10], review_counts[max_pain_sort][:10])
+    print('top 10 strains talked about for', word, ':', list(zip(product_list[max_pain_sort][:10], review_counts[max_pain_sort][:10])))
 
     if plot:
         plt.hist(review_vects[:, pain_idx], bins=50)
         plt.show()
 
-    top_strains = zip(product_list[max_pain_sort], review_counts[max_pain_sort])
+    top_strains = list(zip(product_list[max_pain_sort], review_counts[max_pain_sort]))
 
     return vect_words, review_vects, max_pain_sort, top_strains
 
@@ -99,7 +99,7 @@ def get_top_strains_word_sentiment(prod_review_df, word='ptsd', min_sents=1,
             sent_df = pk.load(open(word + '_sent_df.pk'))
             return senti_df, sent_df
         else:
-            print 'file doesn\'t exist, creating from scratch...'
+            print('file doesn\'t exist, creating from scratch...')
 
     start_time = time()
     if not os.path.exists('leafly/tfvect.pk'):
@@ -131,7 +131,7 @@ def get_top_strains_word_sentiment(prod_review_df, word='ptsd', min_sents=1,
 
         if sent_df['sent_count'].sum() > min_sents:
             early_counter += 1
-            print '[HAS WORD]: adding', s[0]
+            print('[HAS WORD]: adding', s[0])
             sents = ''
             for i, c in sent_df.iterrows():
                 # separate sentences by something unique so we can split them again later
@@ -148,14 +148,14 @@ def get_top_strains_word_sentiment(prod_review_df, word='ptsd', min_sents=1,
             if early_stop and early_counter == 5:
                 break
         else:
-            print s[0]
+            print(s[0])
 
-    print 'top 10 strains:', sorted(best_ptsd, key=lambda x: x[2], reverse=True)[:10]
+    print('top 10 strains:', sorted(best_ptsd, key=lambda x: x[2], reverse=True)[:10])
     sentence_df = sentence_df[sentence_df['sent_count'] >= 1]
     sentence_df['first_sentence'] = sentence_df['word_sentence'].apply(lambda x: x[0])
     sentence_df['sentiment_score'] = sentence_df['first_sentence'].apply(lambda x: get_sentiment(x))
 
-    print 'took', (time() - start_time) / 1000., 'seconds'
+    print('took', (time() - start_time) / 1000., 'seconds')
     if yes_pickle:
         pk.dump(senti_df, open(word + '_senti_df.pk', 'w'))
         pk.dump(sent_df, open(word + '_sent_df.pk', 'w'))
@@ -178,10 +178,10 @@ def score_sentiments(df):
     Uses global variable 'ratings' in case the loop breaks, so that you don't
     ratings.
     '''
-    print '''press 8 to rate sentence as positive sentiment (up arrow on d-pad),
+    print('''press 8 to rate sentence as positive sentiment (up arrow on d-pad),
             2 as negative,
             and 5 as neutral.
-            '''
+            ''')
 
     start = False
     for i, c in df.iterrows():
@@ -189,10 +189,10 @@ def score_sentiments(df):
             start = True
         else:
             continue
-        print ''
+        print('')
         for s in c['word_sentence']:
-            print s
-            rating = raw_input()
+            print(s)
+            rating = input()
             ratings.append(rating)
             sents.append(s)
             ilocs.append(i)

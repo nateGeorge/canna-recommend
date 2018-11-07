@@ -1,11 +1,11 @@
 import graphlab as gl
-import data_preprocess as dp
+from . import data_preprocess as dp
 from graphlab.toolkits.cross_validation import KFold
 from graphlab.toolkits.model_parameter_search import grid_search
-import nlp_funcs as nl
+from . import nlp_funcs as nl
 from collections import Counter
 import pandas as pd
-import scrape_leafly as sl
+from . import scrape_leafly as sl
 import matplotlib.pyplot as plt
 
 
@@ -34,7 +34,7 @@ def basic_fr(train, test):
     test.rating = rec_engine.predict(testsl)
     test.to_csv('test_predictions.csv', index=False, encoding='utf-8')
 
-    print 'raw mse score:', dp.score_model_mse(test_og.rating, test.rating)
+    print('raw mse score:', dp.score_model_mse(test_og.rating, test.rating))
 
     return rec_engine
 

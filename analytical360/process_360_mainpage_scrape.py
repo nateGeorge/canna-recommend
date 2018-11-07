@@ -46,7 +46,7 @@ cdict = sc3.parse_raw_scrape(cannabinoids, terpenes, names)
 cdf = pd.DataFrame(cdict)
 
 for c in cdf.columns:
-    print c
+    print(c)
     if c == 'name':
         continue
 

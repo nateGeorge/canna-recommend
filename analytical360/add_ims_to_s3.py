@@ -23,11 +23,11 @@ class awsS3(object):
         chunk_count = int(math.ceil(source_size / float(chunk_size)))
 
         if verbose:
-            print 'chunk_count:', chunk_count
+            print('chunk_count:', chunk_count)
 
         for i in range(chunk_count):
             if verbose:
-                print 'on chunk:', i
+                print('on chunk:', i)
             offset = chunk_size * i
             bytes = min(chunk_size, source_size - offset)
             with FileChunkIO(source_path, 'r', offset=offset, bytes=bytes) as fp:
@@ -57,10 +57,10 @@ class awsS3(object):
         for f, l in zip(file_list, bucket_list):
             path = path_prefix + f
             if not os.path.exists(path):
-                print 'downloading', f
+                print('downloading', f)
                 l.get_contents_to_filename(path)
             else:
-                print 'already have', f
+                print('already have', f)
 
 if __name__ == "__main__":
     pics1 = list(glob.iglob('analytical360/archive_images/*.jpg'))

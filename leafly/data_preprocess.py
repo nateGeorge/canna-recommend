@@ -65,7 +65,7 @@ def load_all_full_reviews():
         if r['effects'] != '':
             temp_ef = set([s.strip() for s in r['effects'].split('-')])
             if '' in temp_ef:
-                print r
+                print(r)
                 break
             for e in temp_ef:
                 effect_dict.setdefault(e, []).append(1)
@@ -74,8 +74,8 @@ def load_all_full_reviews():
 
     effect_dict['link'] = full_df['link'].values
     # check to make sure lengths are the same
-    for k in effect_dict.keys():
-        print k, len(effect_dict[k])
+    for k in list(effect_dict.keys()):
+        print(k, len(effect_dict[k]))
 
     # one-hot encode flavors
     unique_flavors = set(np.unique(flavors_list))
@@ -85,7 +85,7 @@ def load_all_full_reviews():
         if r['flavors'] != '':
             temp_fl = set([s.strip() for s in r['flavors'].split('-')])
             if '' in temp_fl:
-                print r
+                print(r)
                 break
             for e in temp_fl:
                 flavor_dict.setdefault(e, []).append(1)
@@ -108,7 +108,7 @@ def load_all_full_reviews():
             prod_ohe = prod_ohe.set_value(i, c, r[c] / float(sumcount))
 
         sumcount = np.sum([r[c] for c in unique_effects])
-        print sumcount
+        print(sumcount)
 
     for i, r in prod_ohe.iterrows():
         sumcount = np.sum([r[c] for c in unique_flavors])
@@ -118,7 +118,7 @@ def load_all_full_reviews():
             prod_ohe = prod_ohe.set_value(i, c, r[c] / float(sumcount))
 
         sumcount = np.sum([r[c] for c in unique_flavors])
-        print sumcount
+        print(sumcount)
 
     return ohe_df, prod_ohe
 
@@ -200,7 +200,7 @@ def load_data(fix_names=True, clean_reviews=True, no_anon=True, get_links=False)
     if no_anon:
         df = df[df['user'] != 'Anonymous']
 
-    df = df.drop_duplicates(subset=[u'product', u'rating', u'review', u'user'])
+    df = df.drop_duplicates(subset=['product', 'rating', 'review', 'user'])
     return df
 
 
