@@ -8,6 +8,8 @@ import subprocess
 import fnmatch
 import os
 import re
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 ignore_res = ['.*node_modules.*',
@@ -16,7 +18,7 @@ ignore_res = ['.*node_modules.*',
 # clean python, js, html, and css files
 filetypes = ['py', 'js', 'html', 'css']
 for f in filetypes:
-    for root, dirnames, filenames in os.walk('./'):
+    for root, dirnames, filenames in os.walk('../'):
         for filename in fnmatch.filter(filenames, '*.' + f):
             if f == 'py':
                 print 'autopep8 --in-place ' + filename
