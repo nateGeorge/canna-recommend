@@ -1,6 +1,19 @@
 # canna-recommend
 Recommend cannabis strains and products to users, because there are thousands of strains and not enough time to learn about them all.
 
+# Docker build
+This has 2 Docker builds for deployment.  One is the leafly.com scraper, and the other is the website app.
+
+## leafly scraper
+First, `cd leafly`, then run `docker build -t scrape-leafly .`.  This will build the docker image for the scraper.  To run the scraper docker image, do `docker run scrape-leafly`.
+
+
+## debugging/interactive Docker shell
+If you want to run the Docker image and do some debugging (e.g. for the scraper or server), you can run `docker run -it scrape-leafly /bin/bash`.  This will open up the bash.  It doesn't have ipython installed, so to run ipython for debugging you'd need to do `pip install ipython` once you were in the Docker container shell.
+
+
+# Old directions before docker upgrade:
+
 # Directions for deployment
 Install nltk packages:
 ```python
