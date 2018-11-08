@@ -10,7 +10,6 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
-import data_preprocess as dp
 from lxml import html
 from bs4 import BeautifulSoup as bs
 from selenium import webdriver
@@ -18,6 +17,7 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from pymongo import MongoClient
 from fake_useragent import UserAgent
 
+import data_preprocess as dp
 import db_functions as dbfunc
 
 delay_penalty = 1  # time to wait until starting next thread if can't scrape current one
