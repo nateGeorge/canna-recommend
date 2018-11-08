@@ -1115,6 +1115,7 @@ def get_already_scraped():
 
 if __name__ == "__main__":
     driver = setup_driver()
+    """
     cooks = clear_prompts(driver)  # clears prompts and saves cookies
 
     # another site to scrape:
@@ -1163,3 +1164,4 @@ if __name__ == "__main__":
         for i in range(4):
             chunks.append(remain_df.iloc[i*chunk_step:(i+1)*chunk_step])
         stuff = pool.map(func=scrape_individ_pages_thread, iterable=chunks)
+    """
