@@ -48,26 +48,6 @@ def setup_driver():
     https://stackoverflow.com/a/40208762/4549682
     use geckodriver 0.20.1 until brokenpipeerror bug is fixed: https://github.com/mozilla/geckodriver/issues/1321
     """
-    # couldn't get download working without manual settings...
-    # https://stackoverflow.com/questions/38307446/selenium-browser-helperapps-neverask-openfile-and-savetodisk-is-not-working
-    # create the profile (on ubuntu, firefox -P from command line),
-    prof_paths = ['/home/nate/.mozilla/firefox/jy4qtucw.leafly',
-                # work computer path
-                '/home/nate/.mozilla/firefox/TODO']
-    found_prof = False
-    for p in prof_paths:
-        try:
-            prof_path = p
-            profile = webdriver.FirefoxProfile(prof_path)
-            found_prof = True
-            print('found profile at', p)
-        except FileNotFoundError:
-            pass
-
-    if found_prof == False:
-        print('ERROR: no profile could be found, exiting')
-        exit()
-
     driver = webdriver.Firefox(profile, executable_path='/home/nate/geckodriver')
 
     # prevent broken pipe errors
