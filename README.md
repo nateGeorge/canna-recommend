@@ -11,6 +11,12 @@ First, `cd leafly`, then run `docker build -t scrape-leafly .`.  This will build
 ## debugging/interactive Docker shell
 If you want to run the Docker image and do some debugging (e.g. for the scraper or server), you can run `docker run -it scrape-leafly /bin/bash`.  This will open up the bash.  It doesn't have ipython installed, so to run ipython for debugging you'd need to do `pip install ipython` once you were in the Docker container shell.
 
+## Docker with GUI apps for debugging
+It's helpful when scraping to have the GUI for debugging.  Using this command:
+`docker run -it --net=host --env="DISPLAY" --volume="$HOME/.Xauthority:/root/.Xauthority:rw" scrape-leafly /bin/bash`
+Reference: https://medium.com/@SaravSun/running-gui-applications-inside-docker-containers-83d65c0db110
+Another idea that didn't seem to work: http://somatorio.org/en/post/running-gui-apps-with-docker/
+
 
 # Old directions before docker upgrade:
 
