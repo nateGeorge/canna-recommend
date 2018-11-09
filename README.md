@@ -65,12 +65,27 @@ psql arch360
 ```
 
 # Spinning up AWS, etc
-You might have to run `sudo service mongod start` after starting the instance.  Check to make sure mongo is working with `service mongo status`.
+
+IMPORTANT: the `post_main_addr` variable in apps/web_app/static/js/app.js needs to be updated to the elastic ip for the server!
+
+To be able to access the site, we have to make available port 80:  Enter the commands
+`sudo iptables -A INPUT -i eth0 -p tcp --dport 80 -j ACCEPT`
+`sudo iptables -A INPUT -i eth0 -p tcp --dport 10001 -j ACCEPT`
+`sudo iptables -A PREROUTING -t nat -i eth0 -p tcp --dport 80 -j REDIRECT --to-port 10001`
+
+-- this one seemed to the the final key to making it work, after running the above 3
+`sudo iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-ports 10001`
+
+#### not sure if these are necessary
+`sudo iptables -t nat -D PREROUTING 1`
+`sudo iptables -t nat -A OUTPUT -o lo -p tcp --dport 80 -j REDIRECT --to-port 10001`
 
 You will have to redirect the port to port 80 (standard for browsers): `sudo iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-ports 10001` (https://gist.github.com/kentbrew/776580), may also need to do `sudo iptables -t nat -D PREROUTING 1`
 `sudo iptables -t nat -A OUTPUT -o lo -p tcp --dport 80 -j REDIRECT --to-port 10001`
-I think put those things in here:?
+Could possibly put in here:
 `sudo nano /etc/rc.local`
+
+You might have to run `sudo service mongod start` after starting the instance.  Check to make sure mongo is working with `service mongo status`.
 
 
 I got a domain name on namecheap for less than $10 for a year.  Then, I followed [this tutorial](http://techgenix.com/namecheap-aws-ec2-linux/) to get the address forwarding to the AWS instance.  You do not need the period after the DNS server names.
