@@ -1119,55 +1119,65 @@ def get_already_scraped():
     return links
 
 
+def update_data():
+    while True:
+        try:
+        driver = setup_driver()
+        cooks = clear_prompts(driver)  # clears prompts and saves cookies
+
+        # another site to scrape:
+        # base_url = 'https://weedmaps.com/'
+        # url = base_url + 'dispensaries/in/united-states/colorado/denver-downtown'
+        strains = load_strain_list(driver=driver, cooks=cooks, check=True)
+        ns, df = dbfunc.check_scraped_reviews()
+        strain_names = set([s.split('/')[-1].lower() for s in strains])
+        scraped_strains = set([s.lower() for s in dbfunc.get_list_of_scraped()])
+        # strains on the site but not in the db
+        new_to_scrape = strain_names.difference(scraped_strains)
+        nts = [s for s in strains if s.split(
+            '/')[-1].lower() in new_to_scrape]
+
+        scrape_new = True
+        if scrape_new:
+            scrape_reviews_parallel(nts)
+
+        strains = load_strain_list(driver=driver, check=True)
+        update_reviews(strains)
+
+        # this section was for when I had scraped almost everything, but had to finish_scraping
+        # up a few strains.  Largely useless now
+        # strains_left = get_strains_left_to_scrape(strains)
+        # chunk_size = 10 # scrape 10 strains at a time so as not to overload anything
+        # while len(strains_left) > 0:
+        #     print 'trying again'
+        #     strains_left = get_strains_left_to_scrape(strains)
+        #     scrape_reviews_parallel(strains_left)
+        #     time.sleep(4)
+        # finish_scraping(strains)
+
+        #update_reviews(strains_left)
+
+        # scrape each individ review page for effects, full review, consumption method, etc
+        scrape_long = False
+        if scrape_long:
+            already_scraped = set(get_already_scraped())
+            review_df = dp.load_data(fix_names=False, clean_reviews=False, no_anon=False, get_links=True)
+            remain_df = review_df[~review_df['link'].isin(already_scraped)]
+            #full_df = scrape_individ_pages(review_df) # single-throughput
+            pool_size = mp.cpu_count()
+            pool = mp.Pool(processes=pool_size)
+            chunk_step = int(round(remain_df.shape[0] / 4.0))
+            chunks = []
+            for i in range(4):
+                chunks.append(remain_df.iloc[i*chunk_step:(i+1)*chunk_step])
+            stuff = pool.map(func=scrape_individ_pages_thread, iterable=chunks)
+
+        time.sleep(3600*22)  # sleep 22 hours
+    except Exception as e:
+        print(e)
+        time.sleep(66)
+        driver.quit()
+
+
 if __name__ == "__main__":
-    driver = setup_driver()
-    cooks = clear_prompts(driver)  # clears prompts and saves cookies
-
-    # another site to scrape:
-    # base_url = 'https://weedmaps.com/'
-    # url = base_url + 'dispensaries/in/united-states/colorado/denver-downtown'
-    strains = load_strain_list(driver=driver, cooks=cooks, check=True)
-    """
-    ns, df = dbfunc.check_scraped_reviews()
-    strain_names = set([s.split('/')[-1].lower() for s in strains])
-    scraped_strains = set([s.lower() for s in dbfunc.get_list_of_scraped()])
-    # strains on the site but not in the db
-    new_to_scrape = strain_names.difference(scraped_strains)
-    nts = [s for s in strains if s.split(
-        '/')[-1].lower() in new_to_scrape]
-
-    scrape_new = True
-    if scrape_new:
-        scrape_reviews_parallel(nts)
-
-    strains = load_strain_list(driver=driver, check=True)
-    update_reviews(strains)
-
-    # this section was for when I had scraped almost everything, but had to finish_scraping
-    # up a few strains.  Largely useless now
-    # strains_left = get_strains_left_to_scrape(strains)
-    # chunk_size = 10 # scrape 10 strains at a time so as not to overload anything
-    # while len(strains_left) > 0:
-    #     print 'trying again'
-    #     strains_left = get_strains_left_to_scrape(strains)
-    #     scrape_reviews_parallel(strains_left)
-    #     time.sleep(4)
-    # finish_scraping(strains)
-
-    #update_reviews(strains_left)
-
-    # scrape each individ review page for effects, full review, consumption method, etc
-    scrape_long = False
-    if scrape_long:
-        already_scraped = set(get_already_scraped())
-        review_df = dp.load_data(fix_names=False, clean_reviews=False, no_anon=False, get_links=True)
-        remain_df = review_df[~review_df['link'].isin(already_scraped)]
-        #full_df = scrape_individ_pages(review_df) # single-throughput
-        pool_size = mp.cpu_count()
-        pool = mp.Pool(processes=pool_size)
-        chunk_step = int(round(remain_df.shape[0] / 4.0))
-        chunks = []
-        for i in range(4):
-            chunks.append(remain_df.iloc[i*chunk_step:(i+1)*chunk_step])
-        stuff = pool.map(func=scrape_individ_pages_thread, iterable=chunks)
-    """
+    update_data()
