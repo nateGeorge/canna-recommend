@@ -1,3 +1,5 @@
+# source:
+# https://askubuntu.com/a/928514/458247
 INSTALL_DIR="/usr/local/bin"
 
 json=$(curl -s https://api.github.com/repos/mozilla/geckodriver/releases/latest)
