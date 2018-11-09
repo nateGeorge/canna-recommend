@@ -8,3 +8,4 @@ fake_useragent
 requests
 sklearn
 ipython
+pyvirtualdisplay

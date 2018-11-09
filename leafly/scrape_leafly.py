@@ -17,6 +17,12 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from pymongo import MongoClient
 from fake_useragent import UserAgent
 
+# for headless browser mode with FF
+# http://scraping.pro/use-headless-firefox-scraping-linux/
+from pyvirtualdisplay import Display
+display = Display(visible=0, size=(800, 600))
+display.start()
+
 import data_preprocess as dp
 import db_functions as dbfunc
 
@@ -1141,7 +1147,7 @@ def update_data():
         if scrape_new:
             scrape_reviews_parallel(nts)
 
-        strains = load_strain_list(driver=driver, check=True)
+        strains = load_strain_list(driver=driver, cooks=cooks, check=True)
         update_reviews(strains)
 
         # this section was for when I had scraped almost everything, but had to finish_scraping
