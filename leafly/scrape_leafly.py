@@ -26,9 +26,9 @@ try:
 except:
     pass
 
-STRAIN_PAGE_FILE = 'leafly/leafly_alphabetic_strains_page_' + \
+STRAIN_PAGE_FILE = 'leafly_alphabetic_strains_page_' + \
     datetime.utcnow().isoformat()[:10] + '.pk'
-NEW_STRAIN_PAGE_FILE = 'leafly/leafly_newest_strains_page_' + \
+NEW_STRAIN_PAGE_FILE = 'leafly_newest_strains_page_' + \
     datetime.utcnow().isoformat()[:10] + '.pk'
 BASE_URL = 'https://www.leafly.com'
 STRAIN_URL = BASE_URL + '/explore/sort-alpha'
@@ -119,7 +119,7 @@ def load_current_strains(correct_names=False):
     return strains
 
 
-def load_strain_list(driver, check=False):
+def load_strain_list(driver, cooks, check=False):
     '''
     * checks for latest strain list file and loads it if it's there
     * if there, checks to make sure strain list is up to date and updates
@@ -153,9 +153,9 @@ def update_strainlist(diff, strains, strain_file):
     strains = [s.lower() for s in strains]
     strains = sorted(list(set(strains) | diff))
     # save strainlist with todays date in filename
-    strain_pages_file = 'leafly/strain_pages_list' + \
+    strain_pages_file = 'strain_pages_list' + \
         datetime.now().isoformat()[:10] + '.pk'
-    pk.dump(strains, open(strain_pages_file, 'w'), 2)
+    pk.dump(strains, open(strain_pages_file, 'wb'), -1)
 
     return strains
 
@@ -225,7 +225,7 @@ def scrape_strainlist(driver, save_file, strain_url=STRAIN_URL):
 
     res = driver.page_source
     soup = bs(res, 'lxml')
-    pk.dump(res, open(save_file, 'w'), 2)
+    pk.dump(res, open(save_file, 'wb'), -1)
     print(len(soup.findAll('a', {'class': 'ga_Explore_Strain_Tile'})))
     print(len(soup.findAll('a', {'class': 'ng-scope'})))
     return soup
@@ -315,7 +315,7 @@ def check_if_strains_uptodate(driver, strains, strain_url, cooks):
 
     res = requests.get(new_url, cookies=cooks)
     soup = bs(res.content, 'lxml')
-    pk.dump(res.content, open(NEW_STRAIN_PAGE_FILE, 'w'), 2)
+    pk.dump(res.content, open(NEW_STRAIN_PAGE_FILE, 'wb'), -1)
     strain_cnt_xpath = '//*[@id="main"]/div/section/div[1]/div[2]/div/div[1]/strong'
     tree = html.fromstring(res.content)
     strain_cnt = int(tree.xpath(strain_cnt_xpath)[0].text)
@@ -372,7 +372,7 @@ def get_strains(strain_soup, update_pk=False, strain_pages_file=None):
                                 strain_soup.findAll('a', {'class': 'ng-scope'})
     strains = [s.get('href') for s in strains]
     if not os.path.exists(strain_pages_file) or update_pk:
-        pk.dump(strains, open(strain_pages_file, 'w'), 2)
+        pk.dump(strains, open(strain_pages_file, 'wb'), -1)
 
     strains = set(strains)
     strains = sorted(list(strains))
@@ -1126,7 +1126,7 @@ if __name__ == "__main__":
     # another site to scrape:
     # base_url = 'https://weedmaps.com/'
     # url = base_url + 'dispensaries/in/united-states/colorado/denver-downtown'
-    strains = load_strain_list(driver=driver, check=True)
+    strains = load_strain_list(driver=driver, cooks=cooks, check=True)
     """
     ns, df = dbfunc.check_scraped_reviews()
     strain_names = set([s.split('/')[-1].lower() for s in strains])
