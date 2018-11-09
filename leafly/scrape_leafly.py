@@ -48,7 +48,7 @@ def setup_driver():
     https://stackoverflow.com/a/40208762/4549682
     use geckodriver 0.20.1 until brokenpipeerror bug is fixed: https://github.com/mozilla/geckodriver/issues/1321
     """
-    driver = webdriver.Firefox(profile, executable_path='/home/nate/geckodriver')
+    driver = webdriver.Firefox()
 
     # prevent broken pipe errors
     # https://stackoverflow.com/a/13974451/4549682
@@ -72,7 +72,7 @@ def clear_prompts(driver):
         if age_screen:
             try:
                 driver.find_element_by_xpath(
-                    '//a[@ng-click="answer(true)"]').click()
+                    '//*[@id="tou-continue"]').click()
                 print('clicked 21+ button')
                 age_screen == False
             except:
@@ -102,7 +102,10 @@ def load_current_strains(correct_names=False):
     args: correct_names -- if True, will map weird coded names to strain names
     '''
     newest = max(iglob('strain_pages_list*.pk'), key=os.path.getctime)
-    strains = pk.load(open(newest))
+    try:
+        strains = pk.load(open(newest))
+    except UnicodeDecodeError:  # if in python2 format
+        strains = pk.load(open(newest, 'rb'), encoding='latin1')
     if correct_names:
         product_renames = {'0bf3f759-186e-4dad-89d0-e0fc7598ac53': 'berry-white',
                            '29aca226-23ba-4726-a4ab-f3bf68f2a3c4': 'dynamite',
@@ -124,10 +127,13 @@ def load_strain_list(driver, check=False):
     * otherwise scrolls through entire alphabetically-sorted strain list
     (takes a long time)
     '''
-    newest = max(iglob('leafly/strain_pages_list*.pk'), key=os.path.getctime)
+    newest = max(iglob('strain_pages_list*.pk'), key=os.path.getctime)
     if len(newest) > 0:
         # get list of strain pages
-        strains = pk.load(open(newest))
+        try:
+            strains = pk.load(open(newest))
+        except UnicodeDecodeError:  # if in python2 format
+            strains = pk.load(open(newest, 'rb'), encoding='latin1')
         # check for newly-added strains
         if check:
             uptodate, diff = check_if_strains_uptodate(driver, strains, STRAIN_URL, cooks)
@@ -1115,13 +1121,13 @@ def get_already_scraped():
 
 if __name__ == "__main__":
     driver = setup_driver()
-    """
     cooks = clear_prompts(driver)  # clears prompts and saves cookies
 
     # another site to scrape:
     # base_url = 'https://weedmaps.com/'
     # url = base_url + 'dispensaries/in/united-states/colorado/denver-downtown'
     strains = load_strain_list(driver=driver, check=True)
+    """
     ns, df = dbfunc.check_scraped_reviews()
     strain_names = set([s.split('/')[-1].lower() for s in strains])
     scraped_strains = set([s.lower() for s in dbfunc.get_list_of_scraped()])
