@@ -73,7 +73,7 @@ I think put those things in here:?
 `sudo nano /etc/rc.local`
 
 
-I got a domain name on namecheap for less than $10 for a year.  Then, I followed [this tutorial](http://techgenix.com/namecheap-aws-ec2-linux/) to get the address forwarding to the AWS instance.
+I got a domain name on namecheap for less than $10 for a year.  Then, I followed [this tutorial](http://techgenix.com/namecheap-aws-ec2-linux/) to get the address forwarding to the AWS instance.  You do not need the period after the DNS server names.
 
 Clone the repo, and go to the main directory.  Open up a tmux shell (`tmux new -s server`).  `ctrl+b`, then `d` to exit the session.  `tmux attach -t server` to get back in.  Run `python apps/web_app/app.py` and it should startup.
 
