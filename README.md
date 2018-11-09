@@ -27,7 +27,7 @@ import nltk
 for i in ['stopwords', 'wordnet']:
   nltk.download(i)
 ```
-[Install mongodb](https://docs.mongodb.com/v3.2/tutorial/install-mongodb-on-ubuntu/).
+[Install mongodb](https://docs.mongodb.com/v3.2/tutorial/install-mongodb-on-ubuntu/) -- use the `install_mongodb.sh` file.
 First, import the database:
 
 ```bash
