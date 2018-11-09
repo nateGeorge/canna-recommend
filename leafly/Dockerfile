@@ -13,6 +13,7 @@ RUN apt install firefox-esr -y
 # for running GUIs like firefox
 RUN apt install libcanberra-gtk-module libcanberra-gtk3-module -y
 RUN ./install_geckodriver.sh
+RUN ./install_mongodb.sh
 
 # Install any needed packages specified in requirements.txt
 RUN pip install --trusted-host pypi.python.org -r requirements.txt
@@ -23,5 +24,5 @@ EXPOSE 80
 # Define environment variable
 ENV NAME World
 
-# Run app.py when the container launches
+# Run when the container launches
 #CMD ["python", "app.py"]
