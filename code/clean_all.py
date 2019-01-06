@@ -13,7 +13,9 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 ignore_res = ['.*node_modules.*',
-              '.*plugins.*', '.*platforms.*', '.*jquery_mobile.*']
+              '.*plugins.*',
+              '.*platforms.*',
+              '.*jquery_mobile.*']
 
 # clean python, js, html, and css files
 filetypes = ['py', 'js', 'html', 'css']
