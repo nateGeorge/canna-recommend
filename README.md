@@ -2,7 +2,7 @@
 Recommend cannabis strains and products to users, because there are thousands of strains and not enough time to learn about them all.
 
 # Docker build
-This has 2 Docker builds for deployment.  One is the leafly.com scraper, and the other is the website app.
+This has 2 Docker builds for deployment.  One is the leafly.com scraper, and the other is the website app.  They are in progress, and don't fully work yet.
 
 ## leafly scraper
 First, `cd leafly`, then run `docker build -t scrape-leafly .`.  This will build the docker image for the scraper.  To run the scraper docker image, do `docker run scrape-leafly`.
