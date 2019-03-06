@@ -1,5 +1,6 @@
 # canna-recommend
 Recommend cannabis strains and products to users, because there are thousands of strains and not enough time to learn about them all.
+[Here's a video overview of the app.](https://youtu.be/3ZUYT7WfBL4)
 
 # Docker build
 This has 2 Docker builds for deployment.  One is the leafly.com scraper, and the other is the website app.  They are in progress, and don't fully work yet.
